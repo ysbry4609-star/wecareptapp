@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تقرير التدخل الطبي — WeCare</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:#eef2f7;direction:rtl;padding:10px 8px;color:#1a2a3a}
+.hdr{color:white;border-radius:13px;padding:14px 18px;margin-bottom:13px;display:flex;align-items:center;gap:12px;box-shadow:0 5px 20px rgba(0,0,0,0.3);transition:background 0.4s}
+.hdr.taj{background:linear-gradient(135deg,#0a3d6b,#1565a8,#1e88e5)}
+.hdr.saray{background:linear-gradient(135deg,#4a0080,#7b1fa2,#ab47bc)}
+.hdr .ic{font-size:26px}
+.hdr h1{font-size:14px;font-weight:700}
+.hdr p{font-size:10px;opacity:0.85;margin-top:2px}
+.site-bar{background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.07);margin-bottom:13px;padding:13px 14px;display:flex;align-items:center;gap:10px}
+.site-bar label{font-size:12px;font-weight:700;color:#3a4d62;white-space:nowrap}
+.site-btns{display:flex;gap:8px;flex:1}
+.site-btn{flex:1;padding:9px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;border:2px solid #cdd8e6;background:#f4f7fa;color:#555;font-family:inherit;transition:all 0.2s}
+.site-btn.taj.active{background:linear-gradient(135deg,#0a3d6b,#1e88e5);color:white;border-color:#1565a8}
+.site-btn.saray.active{background:linear-gradient(135deg,#4a0080,#ab47bc);color:white;border-color:#7b1fa2}
+.card{background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.07);margin-bottom:13px;overflow:hidden}
+.ch{padding:11px 16px;font-weight:700;font-size:12px;display:flex;align-items:center;gap:7px;border-bottom:1px solid #e8edf2}
+.ch.bl{background:#e3f0fb;color:#0a3d6b}
+.ch.gr{background:#e6f7f0;color:#1b6b3a}
+.ch.or{background:#fff3e0;color:#7a4000}
+.ch.pu{background:#f0ebff;color:#5b21b6}
+.ch.re{background:#fdecea;color:#a80000}
+.ch.te{background:#e0f7fa;color:#006064}
+.cb{padding:13px 14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.f{display:flex;flex-direction:column;gap:4px}
+.f label{font-size:10px;font-weight:600;color:#3a4d62}
+.rq{color:#e53935}
+input,select,textarea{border:1.5px solid #cdd8e6;border-radius:7px;padding:7px 9px;font-size:12px;font-family:inherit;color:#1a2a3a;background:#f8fafc;width:100%;outline:none}
+input:focus,select:focus,textarea:focus{border-color:#1565a8;background:white}
+textarea{resize:vertical;min-height:55px;line-height:1.6}
+.vg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.vc{background:#f8fafc;border:1.5px solid #cdd8e6;border-radius:9px;padding:9px 5px;text-align:center}
+.vc .vi{font-size:16px;margin-bottom:2px}
+.vc label{display:block;font-size:9px;color:#5a6f85;margin-bottom:3px;font-weight:600}
+.vc input{text-align:center;font-weight:700;background:white;padding:5px 3px;font-size:12px}
+.vc .vu{font-size:8px;color:#8a9ab0;margin-top:2px}
+.pills{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:7px}
+.pill{padding:4px 10px;border-radius:16px;font-size:11px;cursor:pointer;border:1.5px solid #cdd8e6;background:#f4f7fa;color:#3a4d62;font-family:inherit;transition:all 0.15s}
+.pill.on{background:#ddeeff;border-color:#1565a8;color:#0a3d6b;font-weight:700}
+.dv{height:1px;background:#e8edf2;margin:11px 0}
+.sub{font-size:10px;font-weight:700;margin-bottom:6px;color:#3a4d62}
+.gap{height:9px}
+.btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px;padding-bottom:28px}
+.btn{padding:11px 18px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:inherit;display:flex;align-items:center;gap:6px}
+.btn-wa{background:linear-gradient(135deg,#075e54,#128c7e);color:white;box-shadow:0 4px 12px rgba(7,94,84,0.3)}
+.btn-xl{background:linear-gradient(135deg,#1b6b3a,#2e7d52);color:white;box-shadow:0 4px 12px rgba(27,107,58,0.3)}
+.btn-gg{background:linear-gradient(135deg,#2563eb,#3b82f6);color:white;box-shadow:0 4px 12px rgba(37,99,235,0.3)}
+.btn-cl{background:white;color:#555;border:1.5px solid #cdd8e6}
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:100;align-items:flex-end;justify-content:center}
+.ov.open{display:flex}
+.modal{background:white;border-radius:14px 14px 0 0;width:100%;max-width:560px;max-height:85vh;display:flex;flex-direction:column}
+.mh{padding:13px 16px;display:flex;justify-content:space-between;align-items:center;border-radius:14px 14px 0 0;background:linear-gradient(135deg,#075e54,#128c7e);color:white}
+.mh h3{font-size:13px;font-weight:700}
+.mx{background:none;border:none;color:white;font-size:20px;cursor:pointer}
+.mb{padding:13px 14px;overflow-y:auto;flex:1}
+.wat{background:#f0faf8;border:1.5px solid #128c7e;border-radius:10px;padding:12px 13px;font-size:12px;line-height:2;white-space:pre-wrap;direction:rtl;text-align:right;color:#1a2a3a;max-height:300px;overflow-y:auto}
+.mf{padding:12px 14px;border-top:1px solid #eee;display:flex;gap:8px}
+.bcp{flex:1;padding:11px;border-radius:8px;background:linear-gradient(135deg,#075e54,#128c7e);color:white;border:none;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.bcl{padding:11px 14px;border-radius:8px;background:#f0f4f8;border:none;font-family:inherit;font-size:13px;cursor:pointer;color:#555}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(80px);color:white;padding:10px 20px;border-radius:8px;font-size:12px;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,0.2);z-index:200;white-space:nowrap;transition:transform 0.32s cubic-bezier(0.34,1.56,0.64,1)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+@media(max-width:400px){.g3{grid-template-columns:1fr 1fr}.vg{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="hdr taj" id="hdr">
+  <div class="ic">⚕️</div>
+  <div>
+    <h1 id="hdr-title">نظام التقارير الطبية — موقع تاج</h1>
+    <p>Emergency & Critical Care Department — WeCare Company</p>
+  </div>
+</div>
+
+<!-- اختيار الموقع -->
+<div class="site-bar">
+  <label>📍 الموقع:</label>
+  <div class="site-btns">
+    <button class="site-btn taj active" id="btn-taj" onclick="setSite('taj')">🏗️ تاج</button>
+    <button class="site-btn saray" id="btn-saray" onclick="setSite('saray')">🏛️ سراي</button>
+  </div>
+</div>
+
+<!-- مرجع تشخيص سريع -->
+<div class="card">
+  <div class="ch re">🔍 مرجع تشخيص سريع</div>
+  <div class="cb">
+    <div class="pills" id="ref-pills">
+      <button type="button" class="pill" onclick="openRef('headache')">🤕 صداع</button>
+      <button type="button" class="pill" onclick="openRef('abdominal')">🍽️ ألم بطن</button>
+    </div>
+  </div>
+</div>
+
+<!-- بيانات الحالة -->
+<div class="card">
+  <div class="ch bl">👤 بيانات الحالة</div>
+  <div class="cb">
+    <div class="g2">
+      <div class="f"><label>التاريخ <span class="rq">*</span></label><input type="date" id="fd" onchange="updateMonthYear()"></div>
+      <div class="f"><label>الشهر/السنة <span class="rq">*</span></label><input type="text" id="fms" placeholder="يوليو 2026" readonly style="background:#f0f4f8;cursor:default;"></div>
+    </div>
+    <div class="gap"></div>
+    <div class="g3">
+      <div class="f"><label>ميعاد الإبلاغ</label><input type="time" id="frt"></div>
+      <div class="f"><label>ميعاد الوصول</label><input type="time" id="fat"></div>
+    <div class="g3">
+      <div class="f"><label>اسم الحالة <span class="rq">*</span></label><input type="text" id="fn" placeholder="الاسم الكامل"></div>
+      <div class="f"><label>السن</label><input type="number" id="fa" placeholder="سنة" min="0" max="120"></div>
+      <div class="f"><label>الجنس</label>
+        <select id="fg"><option value="">—</option><option>ذكر</option><option>أنثى</option></select>
+      </div>
+    </div>
+    <div class="gap"></div>
+    <div class="g3">
+      <div class="f"><label>الوظيفة</label>
+        <select id="fj">
+          <option value="">اختر...</option>
+          <option>عميل (Client)</option><option>فرد أمن OMS</option><option>مشرف أمن</option>
+          <option>مدير OMS</option><option>Housekeeping</option><option>مشرف Housekeeping</option>
+          <option>زراعة</option><option>مشرف زراعة</option><option>سواق</option>
+          <option>فني</option><option>مراقب كاميرات</option><option>مهندس</option>
+          <option>عاملة</option><option>أسانسير</option><option>أخرى</option>
+        </select>
+      </div>
+      <div class="f"><label>مكان الحدث <span class="rq">*</span></label><input type="text" id="fl" placeholder="مثال: بلوك 4، عمارة 5"></div>
+      <div class="f"><label>جهة الإبلاغ</label>
+        <select id="fr">
+          <option value="">اختر...</option>
+          <option>كنترول روم</option><option>الأمن الداخلي</option><option>السيفتي</option>
+          <option>زيارة</option><option>مباشر</option><option>أخرى</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- الشكوى -->
+<div class="card">
+  <div class="ch or">🩺 الشكوى والتشخيص</div>
+  <div class="cb">
+    <div class="f"><label>الشكوى الرئيسية <span class="rq">*</span></label><input type="text" id="fc" placeholder="مثال: قياء مع حمى / vomiting with fever"></div>
+    <div class="gap"></div>
+    <div class="f"><label>التاريخ المرضي</label><input type="text" id="fh" placeholder="None  أو  DM, HTN  أو جرثومة المعدة..."></div>
+    <div class="dv"></div>
+    <div class="sub">⚡ الأعراض</div>
+    <div class="pills">
+      <button class="pill" onclick="tog(this)">قياء</button><button class="pill" onclick="tog(this)">حمى</button>
+      <button class="pill" onclick="tog(this)">ألم بطني</button><button class="pill" onclick="tog(this)">إسهال</button>
+      <button class="pill" onclick="tog(this)">صداع</button><button class="pill" onclick="tog(this)">دوخة</button>
+      <button class="pill" onclick="tog(this)">ضيق تنفس</button><button class="pill" onclick="tog(this)">ألم صدر</button>
+      <button class="pill" onclick="tog(this)">ألم ظهر</button><button class="pill" onclick="tog(this)">هبوط</button>
+      <button class="pill" onclick="tog(this)">جرح</button><button class="pill" onclick="tog(this)">كدمات</button>
+      <button class="pill" onclick="tog(this)">إغماء</button><button class="pill" onclick="tog(this)">طلب حقنة IM</button>
+      <button class="pill" onclick="tog(this)">قياس ضغط</button><button class="pill" onclick="tog(this)">أخرى</button>
+    </div>
+    <div class="f"><label>تفاصيل إضافية</label><input type="text" id="fcd" placeholder="سبب أو تفاصيل..."></div>
+  </div>
+</div>
+
+<!-- V/S -->
+<div class="card">
+  <div class="ch gr">📊 العلامات الحيوية (V/S)</div>
+  <div class="cb">
+    <div class="vg">
+      <div class="vc"><div class="vi">🩸</div><label>BP</label><input type="text" id="vbp" placeholder="120/80"><div class="vu">mmHg</div></div>
+      <div class="vc"><div class="vi">🫁</div><label>SpO2</label><input type="number" id="vsp" placeholder="98"><div class="vu">%</div></div>
+      <div class="vc"><div class="vi">🧠</div><label>GCS</label><input type="text" id="vgc" placeholder="15/15"><div class="vu">GCS</div></div>
+      <div class="vc"><div class="vi">🩺</div><label>RBS</label><input type="text" id="vrb" placeholder="/// أو 120"><div class="vu">mg/dL</div></div>
+      <div class="vc"><div class="vi">💓</div><label>H.R</label><input type="number" id="vhr" placeholder="80"><div class="vu">bpm</div></div>
+      <div class="vc"><div class="vi">🌡️</div><label>Temp</label><input type="text" id="vtm" placeholder="37 أو ///"><div class="vu">°C</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- الإجراءات -->
+<div class="card">
+  <div class="ch pu">🛠️ الإجراءات والتدخل الطبي</div>
+  <div class="cb">
+    <div class="sub">✅ البروتوكولات</div>
+    <div class="pills" id="proto-pills">
+      <button class="pill on" onclick="tog(this)">ABCDE</button>
+      <button class="pill on" onclick="tog(this)">IPSGs</button>
+      <button class="pill on" onclick="tog(this)">ITLS</button>
+      <button class="pill" onclick="tog(this)">BLS</button>
+      <button class="pill" onclick="tog(this)">ALS</button>
+      <button class="pill" onclick="tog(this)">Airway Mgmt</button>
+      <button class="pill" onclick="tog(this)">O2 Therapy</button>
+      <button class="pill" onclick="tog(this)">IV / Cannula</button>
+      <button class="pill" onclick="tog(this)">Nebulizer</button>
+      <button class="pill" onclick="tog(this)">Dressing</button>
+      <button class="pill" onclick="tog(this)">إحالة مستشفى</button>
+      <button class="pill" onclick="tog(this)">Psych Support</button>
+    </div>
+    <div class="dv"></div>
+    <div class="sub">💊 الأدوية والعلاج</div>
+    <div class="pills" id="meds-pills">
+      <button class="pill" onclick="tog(this)">Paracetamol قرص</button>
+      <button class="pill" onclick="tog(this)">Ketolac قرص</button>
+      <button class="pill" onclick="tog(this)">Ketolac IM</button>
+      <button class="pill" onclick="tog(this)">Spasmodigestin قرص</button>
+      <button class="pill" onclick="tog(this)">Visceralgine IM</button>
+      <button class="pill" onclick="tog(this)">Dexamethasone IM</button>
+      <button class="pill" onclick="tog(this)">Primperan IM</button>
+      <button class="pill" onclick="tog(this)">Antinal</button>
+      <button class="pill" onclick="tog(this)">NS / سوائل وريدية</button>
+      <button class="pill" onclick="tog(this)">Glucose IM</button>
+      <button class="pill" onclick="tog(this)">Crosor نقط</button>
+      <button class="pill" onclick="tog(this)">Avil IM</button>
+      <button class="pill" onclick="tog(this)">Spasmofen IM</button>
+      <button class="pill" onclick="tog(this)">Hemolaclar مرهم</button>
+      <button class="pill" onclick="tog(this)">Move Massage</button>
+      <button class="pill" onclick="tog(this)">خافض حرارة أطفال</button>
+    </div>
+    <div class="f"><label>دواء آخر / تفاصيل الإجراء</label>
+      <textarea id="fpr" placeholder="أي إجراءات إضافية..."></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- التعليمات -->
+<div class="card">
+  <div class="ch re">📢 Health Education</div>
+  <div class="cb">
+    <div class="pills" id="edu-pills">
+      <button class="pill" onclick="tog(this)">الراحة التامة</button>
+      <button class="pill" onclick="tog(this)">شرب المياه الكافية</button>
+      <button class="pill" onclick="tog(this)">التغذية السليمة</button>
+      <button class="pill" onclick="tog(this)">تعويض السوائل / ORS</button>
+      <button class="pill" onclick="tog(this)">السلامة الغذائية</button>
+      <button class="pill" onclick="tog(this)">أطعمة خفيفة ومسلوقة</button>
+      <button class="pill" onclick="tog(this)">كمادات باردة</button>
+      <button class="pill" onclick="tog(this)">البعد عن الشمس</button>
+      <button class="pill" onclick="tog(this)">ممارسة الرياضة</button>
+      <button class="pill" onclick="tog(this)">النوم الكافي</button>
+      <button class="pill" onclick="tog(this)">متابعة internist</button>
+      <button class="pill" onclick="tog(this)">متابعة dentist</button>
+      <button class="pill" onclick="tog(this)">متابعة urologist</button>
+      <button class="pill" onclick="tog(this)">متابعة nephrologist</button>
+      <button class="pill" onclick="tog(this)">متابعة dermatologist</button>
+      <button class="pill" onclick="tog(this)">متابعة الطبيب والأدوية</button>
+      <button class="pill" onclick="tog(this)">طوارئ عند تدهور الحالة</button>
+      <button class="pill" onclick="tog(this)">قواعد السلامة أثناء العمل</button>
+    </div>
+    <div class="f"><label>تعليمات إضافية</label>
+      <input type="text" id="fee" placeholder="أي تعليمات إضافية...">
+    </div>
+  </div>
+</div>
+
+<!-- النتيجة -->
+<div class="card">
+  <div class="ch te">📋 النتيجة والمسعف</div>
+  <div class="cb">
+    <div class="g3">
+      <div class="f"><label>نتيجة التدخل</label>
+        <select id="foc">
+          <option value="">—</option>
+          <option>تحسن وأُفرج عنه</option><option>تحول للمستشفى</option>
+          <option>تحسن جزئي - متابعة</option><option>رفض العلاج</option><option>حالة خطيرة - إسعاف</option>
+        </select>
+      </div>
+      <div class="f"><label>اسم المسعف</label><input type="text" id="fpa" placeholder="اسم مقدم الخدمة"></div>
+      <div class="f"><label>نوع الحدث</label>
+        <select id="fet">
+          <option>خدمات اسعافات طبية</option><option>حادث عمل</option>
+          <option>حالة طارئة</option><option>إسعاف ونقل</option>
+        </select>
+      </div>
+    </div>
+    <div class="gap"></div>
+    <div class="f"><label>ملاحظات</label>
+      <textarea id="fno" placeholder="أي ملاحظات..."></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- أزرار -->
+<div class="btns">
+  <button class="btn btn-cl" onclick="clearAll()">🗑️ مسح</button>
+  <button class="btn btn-wa" onclick="openWA()">💬 واتساب</button>
+  <button class="btn btn-xl" onclick="exportExcel()">📥 Excel</button>
+  <button class="btn btn-gg" onclick="saveToSheet()">📊 حفظ في Google Sheets</button>
+</div>
+
+<!-- WA Modal -->
+<div class="ov" id="waOv">
+  <div class="modal">
+    <div class="mh">
+      <h3>💬 التقرير — جاهز للواتساب</h3>
+      <button class="mx" onclick="closeWA()">✕</button>
+    </div>
+    <div class="mb"><div class="wat" id="waT"></div></div>
+    <div class="mf">
+      <button class="bcp" onclick="copyWA()">📋 نسخ النص</button>
+      <button class="bcl" onclick="closeWA()">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reference Card Modal -->
+<div class="ov" id="refOv">
+  <div class="modal">
+    <div class="mh" style="background:linear-gradient(135deg,#a80000,#e53935)">
+      <h3 id="refTitle">🔍 مرجع تشخيص سريع</h3>
+      <button class="mx" onclick="closeRef()">✕</button>
+    </div>
+    <div class="mb"><div class="wat" id="refBody" style="border-color:#e53935;background:#fdecea"></div></div>
+    <div class="mf">
+      <button class="bcl" onclick="closeRef()" style="flex:1">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="tst"></div>
+
+<script>
+// ====== init ======
+const STORAGE_KEY = 'wecare_medical_report_draft_v2';
+const EXCEL_HISTORY_PREFIX = 'wecare_excel_rows_';
+let site = 'taj';
+
+function init(){
+  bindFormEvents();
+  restoreDraft();
+  applyDefaults();
+  setSite(site);
+}
+
+function bindFormEvents(){
+  document.querySelectorAll('input,select,textarea').forEach(el=>{
+    el.addEventListener('input', saveDraft);
+    el.addEventListener('change', saveDraft);
+  });
+  window.addEventListener('beforeunload', saveDraft);
+}
+
+function updateMonthYear(){
+  const dateVal = v('fd');
+  if(!dateVal) return;
+  const date = new Date(dateVal + 'T00:00:00');
+  const monthNames = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  const monthName = monthNames[date.getMonth()];
+  document.getElementById('fms').value = `${monthName} ${year}`;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(collectDraft()));
+}
+
+function applyDefaults(){
+  if(!v('fd')) {
+    document.getElementById('fd').value = new Date().toISOString().split('T')[0];
+  }
+  updateMonthYear();
+  if(!v('frt')) document.getElementById('frt').value = new Date().toTimeString().slice(0,5);
+  if(!v('vgc')) document.getElementById('vgc').value = '15/15';
+}
+
+// ====== site toggle ======
+function setSite(s){
+  site = s;
+  const hdr = document.getElementById('hdr');
+  const title = document.getElementById('hdr-title');
+  const btnT = document.getElementById('btn-taj');
+  const btnS = document.getElementById('btn-saray');
+  if(s==='taj'){
+    hdr.className='hdr taj';
+    title.textContent='نظام التقارير الطبية — موقع تاج';
+    btnT.classList.add('active'); btnS.classList.remove('active');
+  } else {
+    hdr.className='hdr saray';
+    title.textContent='نظام التقارير الطبية — موقع سراي';
+    btnS.classList.add('active'); btnT.classList.remove('active');
+  }
+  saveDraft();
+}
+
+// ====== helpers ======
+function tog(el){ el.classList.toggle('on'); saveDraft(); }
+function v(id){ return (document.getElementById(id)||{}).value||''; }
+function onPills(id){ return Array.from(document.querySelectorAll('#'+id+' .pill.on')).map(b=>b.textContent).join('، '); }
+function getSymptomsText(){
+  const excluded = new Set(['ABCDE','IPSGs','ITLS','BLS','ALS','Airway Mgmt','O2 Therapy','IV / Cannula','Nebulizer','Dressing','إحالة مستشفى','Psych Support',
+    'الراحة التامة','شرب المياه الكافية','التغذية السليمة','تعويض السوائل / ORS','السلامة الغذائية','أطعمة خفيفة ومسلوقة','كمادات باردة','البعد عن الشمس','ممارسة الرياضة','النوم الكافي','متابعة internist','متابعة dentist','متابعة urologist','متابعة nephrologist','متابعة dermatologist','متابعة الطبيب والأدوية','طوارئ عند تدهور الحالة','قواعد السلامة أثناء العمل',
+    'Paracetamol قرص','Ketolac قرص','Ketolac IM','Spasmodigestin قرص','Visceralgine IM','Dexamethasone IM','Primperan IM','Antinal','NS / سوائل وريدية','Glucose IM','Crosor نقط','Avil IM','Spasmofen IM','Hemolaclar مرهم','Move Massage','خافض حرارة أطفال']);
+  return Array.from(document.querySelectorAll('.pill.on'))
+    .filter(b=>!excluded.has(b.textContent))
+    .map(b=>b.textContent)
+    .join('، ');
+}
+function toast(msg,c='#1b6b3a'){
+  const t=document.getElementById('tst');
+  t.textContent=msg; t.style.background=c;
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000);
+}
+function collectDraft(){
+  const draft = { site };
+  document.querySelectorAll('input,select,textarea').forEach(el=>{ draft[el.id] = el.value; });
+  document.querySelectorAll('.pill').forEach(p=>{ draft['pill:' + p.textContent.trim()] = p.classList.contains('on'); });
+  return draft;
+}
+function saveDraft(){
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(collectDraft()));
+  } catch (e) {
+    console.warn('Could not save draft', e);
+  }
+}
+function restoreDraft(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const draft = JSON.parse(raw);
+    if(draft.site) site = draft.site;
+    document.querySelectorAll('input,select,textarea').forEach(el=>{ if(draft[el.id] !== undefined) el.value = draft[el.id]; });
+    document.querySelectorAll('.pill').forEach(p=>{ const key='pill:' + p.textContent.trim(); p.classList.toggle('on', !!draft[key]); });
+  } catch (e) {
+    console.warn('Could not restore draft', e);
+  }
+}
+function getExcelHeaders(){
+  return ['التاريخ','ميعاد الإبلاغ','ميعاد الوصول','جهة الإبلاغ','اسم الحالة','العمر','الجنس','الوظيفة','مكان الحدث','الشكوى','التاريخ المرضي','الأعراض','تفاصيل إضافية','BP','SpO2','GCS','RBS','H.R','Temp','البروتوكولات','الأدوية','التعليمات','تفاصيل الإجراء','نتيجة التدخل','اسم المسعف','نوع الحدث','ملاحظات','نص التقرير','الموقع','وقت الحفظ'];
+}
+function getExcelRow(){
+  return [
+    v('fd'), v('frt'), v('fat'), v('fr'), v('fn'), v('fa'), v('fg'), v('fj'), v('fl'), v('fc'),
+    v('fh'), getSymptomsText(), v('fcd'), v('vbp'), v('vsp'), v('vgc'), v('vrb'), v('vhr'), v('vtm'),
+    onPills('proto-pills'), onPills('meds-pills'), onPills('edu-pills'), v('fpr'), v('foc'), v('fpa'), v('fet'), v('fno'), build(),
+    site==='taj' ? 'تاج' : 'سراي', new Date().toLocaleString('ar-EG')
+  ];
+}
+
+// ====== build report ======
+function build(){
+  const siteName = site==='taj' ? 'فريق إسعاف موقع تاج' : 'فريق إسعاف موقع سراي';
+  const hist=v('fh')||'None', bp=v('vbp')||'/////', spo2=v('vsp')||'//',
+        gcs=v('vgc')||'15/15', rbs=v('vrb')||'////', hr=v('vhr')||'///', temp=v('vtm')||'/////';
+
+  const proto = onPills('proto-pills') || 'ABCDE, IPSGs, ITLS';
+  const meds  = onPills('meds-pills');
+  const edu   = onPills('edu-pills');
+  const symp  = getSymptomsText();
+
+  let cl = v('fc');
+  if(v('fcd')) cl += ` (${v('fcd')})`;
+  if(symp) cl += `، ${symp}`;
+
+  let t = '';
+
+  // ===== العنوان =====
+  t += `⚕️ تقرير تدخل طبي`;
+  if(v('fc')) t += ` — ${v('fc')}`;
+  t += `\n\n`;
+
+  // ===== بيانات الحالة =====
+  t += `👤 بيانات الحالة:\n`;
+  if(v('fr')) t += `* المبلغ: ${v('fr')}\n`;
+  if(v('fl')) t += `* المكان: ${v('fl')}\n`;
+  t += `* الاسم: ${v('fn')}\n`;
+  if(v('fa')) t += `* السن: ${v('fa')} عاماً\n`;
+  if(v('fj')) t += `* الوظيفة: ${v('fj')}\n`;
+  if(cl) t += `* الشكوى والأعراض الحالية: ${cl}\n`;
+  t += `* التاريخ المرضي: ${hist}\n`;
+  t += `\n`;
+
+  // ===== العلامات الحيوية =====
+  t += `📊 أولاً: العلامات الحيوية (V/S) أثناء الفحص:\n`;
+  t += `* درجة الوعي (GCS): ${gcs}\n`;
+  t += `* ضغط الدم (BP): ${bp} mmHg\n`;
+  t += `* نسبة الأكسجين (SpO2): ${spo2}%\n`;
+  t += `* مستوى السكر العشوائي (RBS): ${rbs} mg/dL\n`;
+  t += `* نبض القلب (H.R): ${hr} bpm\n`;
+  t += `* درجة الحرارة (Temp): ${temp}°C\n`;
+  t += `\n`;
+
+  // ===== الإجراءات والتدخل الطبي =====
+  t += `🛠️ ثانياً: الإجراءات والتدخل الطبي:\n`;
+  t += `* البروتوكولات المُتبعة: ${proto}\n`;
+  t += `* تم قياس العلامات الحيوية بدقة ومراقبتها\n`;
+  if(meds) t += `* الأدوية والعلاج: ${meds}\n`;
+  if(v('fpr')) t += `* ${v('fpr')}\n`;
+  if(v('foc')) t += `* نتيجة التدخل: ${v('foc')}\n`;
+  t += `\n`;
+
+  // ===== التعليمات والنصائح الطبية =====
+  t += `📢 ثالثاً: التعليمات والنصائح الطبية (Health Education):\n`;
+  t += `* تم نصح المريض بـ: ${edu || 'الراحة وشرب المياه الكافية'}\n`;
+  if(v('fee')) t += `* ${v('fee')}\n`;
+
+  // ===== ملاحظات =====
+  if(v('fno')) t += `\n📝 ملاحظات:\n${v('fno')}\n`;
+
+  // ===== التذييل =====
+  t += `\nEmergency and Critical Care Department, WeCare Company\n${siteName}`;
+  if(v('fpa')) t += `\nاسم المسعف: ${v('fpa')}`;
+
+  return t;
+}
+
+// ====== مرجع تشخيص سريع ======
+const REF_CARDS = {
+  headache: {
+    title: '🤕 صداع — دليل الفحص السريع',
+    body:
+`📌 أسئلة أساسية لازم تسألها:
+* بدأ إمتى ومتى؟ فجأة ولا تدريجي؟
+* شدة الألم من 1 لـ10، ومكانه بالظبط (جانب واحد / كله / مؤخرة الرأس)؟
+* في أعراض مصاحبة: غثيان/قيء، حساسية من الضوء، تنميل أو ضعف في طرف، تشوش في الرؤية أو الكلام؟
+* حصل بعد ضربة أو سقوط على الرأس؟
+* بياخد أدوية ضغط أو سكر؟ وآخر قياس ضغط له كام؟
+
+🚩 علامات خطر تستدعي التحويل الفوري للمستشفى:
+* صداع "مفاجئ وشديد جداً" وصفه المريض إنه "أسوأ صداع في حياته"
+* صداع مصحوب بتيبس في الرقبة + حرارة مرتفعة
+* صداع مع ضعف/تنميل في جانب واحد من الجسم أو تدلي في الوجه أو صعوبة كلام (اشتباه سكتة دماغية)
+* صداع مع تشوش وعي أو نعاس غير طبيعي
+* صداع بعد إصابة مباشرة في الرأس
+* صداع مع قيء متكرر لا يتحسن
+* ضغط دم مرتفع جداً مصاحب للصداع (فوق 180/120 تقريباً)
+
+✅ الفحص الأولي المقترح:
+* قياس V/S كامل (خصوصاً BP وGCS)
+* فحص حدقة العين (متساوية ومتفاعلة مع الضوء؟)
+* اطلب من المريض يبتسم / يرفع الذراعين / يكرر جملة بسيطة (فحص سريع لعلامات السكتة)
+* لو مفيش أي علامة خطر: راحة، مكان هادي، وتقييم الاستجابة للمسكن حسب بروتوكولكم المعتاد`
+  },
+  abdominal: {
+    title: '🍽️ ألم بطن — دليل الفحص السريع',
+    body:
+`📌 أسئلة أساسية لازم تسألها:
+* مكان الألم بالظبط (فوق/تحت السرة، يمين/شمال)؟ وهل بيتحرك لمكان تاني (زي الظهر أو الكتف)؟
+* بدأ إمتى؟ ومتصل ولا على فترات (Colicky)؟
+* في غثيان/قيء/إسهال/إمساك؟ آخر أكلة كانت إمتى وفيها إيه؟
+* في دم في القيء أو البراغيث (لون البراز غامق/أسود)؟
+* للسيدات: تاريخ آخر دورة شهرية؟ احتمال حمل؟
+
+🚩 علامات خطر تستدعي التحويل الفوري للمستشفى:
+* بطن مشدود جداً كالخشب (Rigid) عند اللمس، أو ألم شديد عند الضغط ثم تركه بسرعة
+* ألم شديد مركز في الجزء السفلي الأيمن من البطن (اشتباه زائدة دودية)
+* علامات صدمة: ضغط منخفض، نبض سريع، شحوب، عرق بارد
+* قيء دموي أو براز أسود/دموي
+* ألم بطن مع حمى مرتفعة وقشعريرة
+* ألم بطن حاد عند سيدة يُحتمل حملها (اشتباه حمل خارج الرحم)
+* ألم منتشر للصدر أو الظهر مع ضيق تنفس (استبعاد سبب قلبي/وعائي وليس هضمي فقط)
+
+✅ الفحص الأولي المقترح:
+* قياس V/S كامل مع التركيز على BP وHR (علامات الصدمة)
+* الضغط برفق على مناطق مختلفة من البطن وملاحظة رد فعل المريض
+* لو مفيش أي علامة خطر: راحة، الامتناع عن الأكل مؤقتاً، ومتابعة حسب بروتوكولكم المعتاد`
+  }
+};
+
+function openRef(key){
+  const card = REF_CARDS[key];
+  if(!card) return;
+  document.getElementById('refTitle').textContent = card.title;
+  document.getElementById('refBody').textContent = card.body;
+  document.getElementById('refOv').classList.add('open');
+}
+function closeRef(){ document.getElementById('refOv').classList.remove('open'); }
+
+// ====== WhatsApp ======
+function openWA(){
+  if(!v('fn')){ toast('⚠️ أدخل اسم الحالة أولاً','#c0392b'); return; }
+  document.getElementById('waT').textContent = build();
+  document.getElementById('waOv').classList.add('open');
+}
+function closeWA(){ document.getElementById('waOv').classList.remove('open'); }
+function copyWA(){
+  const text = document.getElementById('waT').textContent;
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(text).then(()=>{ toast('✅ تم النسخ — الصقه في الواتساب!'); closeWA(); });
+  } else {
+    const ta=document.createElement('textarea'); ta.value=text;
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    toast('✅ تم النسخ!'); closeWA();
+  }
+}
+
+// ====== Excel Export ======
+function exportExcel(){
+  if(!v('fn')){ toast('⚠️ أدخل اسم الحالة أولاً','#c0392b'); return; }
+  if(!v('fd')){ toast('⚠️ اختر التاريخ أولاً','#c0392b'); return; }
+  
+  const siteName = site==='taj' ? 'تاج' : 'سراي';
+  const monthNames = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  const dateVal = v('fd');
+  const date = new Date(dateVal + 'T00:00:00');
+  const monthNum = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  const monthName = monthNames[date.getMonth()];
+  
+  const headers = getExcelHeaders();
+  const row = getExcelRow();
+  const storageKey = EXCEL_HISTORY_PREFIX + site + '_' + year + '_' + monthNum;
+  let rows = [];
+  try {
+    rows = JSON.parse(localStorage.getItem(storageKey) || '[]');
+  } catch (e) {
+    console.warn('Could not read Excel history', e);
+  }
+  if(!rows.length){ rows.push(headers); }
+  rows.push(row);
+  localStorage.setItem(storageKey, JSON.stringify(rows));
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:16},{wch:12},{wch:12},{wch:16},{wch:20},{wch:8},{wch:8},{wch:16},{wch:20},{wch:20},{wch:20},{wch:35},{wch:25},{wch:12},{wch:10},{wch:10},{wch:10},{wch:10},{wch:10},{wch:24},{wch:24},{wch:24},{wch:24},{wch:20},{wch:20},{wch:20},{wch:95},{wch:12},{wch:18}];
+  XLSX.utils.book_append_sheet(wb, ws, 'تقارير');
+  const fname = `تقارير_${siteName}_${monthName}_${year}.xlsx`;
+  XLSX.writeFile(wb, fname);
+  toast(`✅ تم إنشاء: ${fname}\n📂 المجلد: Downloads`);
+}
+
+// ====== clear ======
+function clearAll(){
+  if(!confirm('مسح كل البيانات؟')) return;
+  document.querySelectorAll('input,select,textarea').forEach(el=>{ if(el.type!=='date' && el.type!=='number') el.value=''; });
+  document.getElementById('fd').value = new Date().toISOString().split('T')[0];
+  document.getElementById('frt').value = new Date().toTimeString().slice(0,5);
+  document.getElementById('vgc').value = '15/15';
+  updateMonthYear();
+  document.querySelectorAll('.pill').forEach(p=>{
+    p.classList.remove('on');
+    if(['ABCDE','IPSGs','ITLS'].includes(p.textContent)) p.classList.add('on');
+  });
+  saveDraft();
+  toast('🗑️ تم مسح الفورم','#555');
+}
+
+init();
+document.getElementById('waOv').addEventListener('click',function(e){ if(e.target===this) closeWA(); });
+
+// ====== Google Apps Script URL (سكربت واحد موحّد لكل المواقع) ======
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxTHJowoY7X2LYhsbe52UppJu1k_AAvER3aW9Mt9GKSR2WZn6pXuilfPZBJWsdlvFvK/exec';
+
+// ====== Save to Google Sheets ======
+function saveToSheet(){
+  if(!v('fn')){ toast('⚠️ أدخل اسم الحالة أولاً','#c0392b'); return; }
+  const url = SCRIPT_URL;
+  if(!url){ toast('⚠️ رابط Google Apps Script غير مُعد','#c0392b'); return; }
+
+  const payload = {
+    "الموقع": site === 'taj' ? 'تاج' : 'سراي',
+    "التاريخ": v('fd'),
+    "نوع الحدث": v('fet'),
+    "تقرير عن الحدث": build(),
+    "السن": v('fa'),
+    "الوظيفه": v('fj'),
+    "اسم الحاله": v('fn'),
+    "ميعاد الابلاغ": v('frt'),
+    "ميعاد الوصول": v('fat'),
+    "مكان الحدث": v('fl')
+  };
+
+  const ov = document.createElement('div'); ov.className='ov open';
+  ov.style.pointerEvents='none';
+  document.body.appendChild(ov);
+
+  fetch(url, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
+    .then(()=>{
+      toast('✅ تم الحفظ في Google Sheets');
+      document.body.removeChild(ov);
+    }).catch(err=>{
+      toast('⚠️ فشل الاتصال: ' + (err.message||''),'#c0392b');
+      if(document.body.contains(ov)) document.body.removeChild(ov);
+    });
+}
+</script>
+</body>
+</html>
