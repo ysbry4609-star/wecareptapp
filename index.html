@@ -138,11 +138,12 @@ textarea{resize:vertical;min-height:55px;line-height:1.6}
       </div>
       <div class="f"><label>مكان الحدث <span class="rq">*</span></label><input type="text" id="fl" placeholder="مثال: بلوك 4، عمارة 5"></div>
       <div class="f"><label>جهة الإبلاغ</label>
-        <select id="fr">
+        <select id="fr" onchange="onReportSourceChange()">
           <option value="">اختر...</option>
           <option>كنترول روم</option><option>الأمن الداخلي</option><option>السيفتي</option>
           <option>زيارة</option><option>مباشر</option><option>أخرى</option>
         </select>
+        <input type="text" id="frOther" placeholder="اكتب جهة الإبلاغ..." style="display:none;margin-top:6px">
       </div>
     </div>
   </div>
@@ -437,6 +438,20 @@ function getJobValue(){
   return v('fj');
 }
 
+// ====== جهة الإبلاغ (مع إمكانية الكتابة عند اختيار "أخرى") ======
+function onReportSourceChange(shouldSave){
+  const sel = document.getElementById('fr');
+  const other = document.getElementById('frOther');
+  if(!sel || !other) return;
+  other.style.display = sel.value === 'أخرى' ? 'block' : 'none';
+  if(shouldSave !== false) saveDraft();
+}
+function getReportSourceValue(){
+  const sel = document.getElementById('fr');
+  if(sel && sel.value === 'أخرى') return v('frOther');
+  return v('fr');
+}
+
 // ====== helpers ======
 function tog(el){ el.classList.toggle('on'); saveDraft(); }
 function v(id){ return (document.getElementById(id)||{}).value||''; }
@@ -481,6 +496,7 @@ function restoreDraft(){
     if(draft.fj !== undefined) document.getElementById('fj').value = draft.fj;
     if(draft.fjOther !== undefined) document.getElementById('fjOther').value = draft.fjOther;
     onJobChange(false);
+    onReportSourceChange(false);
   } catch (e) {
     console.warn('Could not restore draft', e);
   }
@@ -490,7 +506,7 @@ function getExcelHeaders(){
 }
 function getExcelRow(){
   return [
-    v('fd'), v('frt'), v('fat'), v('fr'), v('fn'), v('fa'), v('fg'), getJobValue(), v('fl'), v('fc'),
+    v('fd'), v('frt'), v('fat'), getReportSourceValue(), v('fn'), v('fa'), v('fg'), getJobValue(), v('fl'), v('fc'),
     v('fh'), getSymptomsText(), v('fcd'), v('vbp'), v('vsp'), v('vgc'), v('vrb'), v('vhr'), v('vtm'),
     onPills('proto-pills'), onPills('meds-pills'), onPills('edu-pills'), v('fpr'), v('foc'), v('fpa'), v('fet'), v('fno'), build(),
     site==='taj' ? 'تاج' : 'سراي', new Date().toLocaleString('ar-EG')
@@ -521,7 +537,7 @@ function build(){
 
   // ===== بيانات الحالة =====
   t += `👤 بيانات الحالة:\n`;
-  if(v('fr')) t += `* المبلغ: ${v('fr')}\n`;
+  if(getReportSourceValue()) t += `* المبلغ: ${getReportSourceValue()}\n`;
   if(v('fl')) t += `* المكان: ${v('fl')}\n`;
   t += `* الاسم: ${v('fn')}\n`;
   if(v('fa')) t += `* السن: ${v('fa')} عاماً\n`;
@@ -941,7 +957,8 @@ function saveToSheet(){
     "ميعاد الابلاغ": v('frt'),
     "ميعاد الوصول": v('fat'),
     "مكان الحدث": v('fl'),
-    "اسم المسعف": v('fpa')
+    "اسم المسعف": v('fpa'),
+    "جهة الإبلاغ": getReportSourceValue()
   };
 
   const ov = document.createElement('div'); ov.className='ov open';
