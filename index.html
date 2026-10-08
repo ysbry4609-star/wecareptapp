@@ -8,12 +8,14 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:#eef2f7;direction:rtl;padding:10px 8px;color:#1a2a3a}
-.hdr{color:white;border-radius:13px;padding:14px 18px;margin-bottom:13px;display:flex;align-items:center;gap:12px;box-shadow:0 5px 20px rgba(0,0,0,0.3);transition:background 0.4s}
+.hdr{color:white;border-radius:13px;padding:14px 18px;margin-bottom:13px;display:flex;flex-direction:column;gap:10px;box-shadow:0 5px 20px rgba(0,0,0,0.3);transition:background 0.4s}
 .hdr.taj{background:linear-gradient(135deg,#0a3d6b,#1565a8,#1e88e5)}
 .hdr.saray{background:linear-gradient(135deg,#4a0080,#7b1fa2,#ab47bc)}
 .hdr .ic{font-size:26px}
 .hdr h1{font-size:14px;font-weight:700}
 .hdr p{font-size:10px;opacity:0.85;margin-top:2px}
+.hdr-motto{background:rgba(0,0,0,.18);text-align:center;padding:8px 14px;border-radius:9px;font-size:12px;font-weight:700}
+.hdr-motto span{color:#ffd54f}
 .site-bar{background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.07);margin-bottom:13px;padding:13px 14px;display:flex;align-items:center;gap:10px}
 .site-bar label{font-size:12px;font-weight:700;color:#3a4d62;white-space:nowrap}
 .site-btns{display:flex;gap:8px;flex:1}
@@ -55,6 +57,31 @@ textarea{resize:vertical;min-height:55px;line-height:1.6}
 .btn-xl{background:linear-gradient(135deg,#1b6b3a,#2e7d52);color:white;box-shadow:0 4px 12px rgba(27,107,58,0.3)}
 .btn-gg{background:linear-gradient(135deg,#2563eb,#3b82f6);color:white;box-shadow:0 4px 12px rgba(37,99,235,0.3)}
 .btn-cl{background:white;color:#555;border:1.5px solid #cdd8e6}
+.priority-btn{flex:1;padding:9px 6px;border-radius:9px;border:1.5px solid #dfe4ea;background:#f8fafb;color:#556;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit;transition:.15s}
+.priority-btn.active{border-color:transparent;color:#fff}
+.priority-btn.minor.active{background:#28a745}
+.priority-btn.moderate.active{background:#e6a817}
+.priority-btn.critical.active{background:#c0392b}
+
+/* الوضع الليلي */
+body.dark{background:#0f1720;color:#dbe4ee}
+body.dark .card,body.dark .site-bar{background:#182534;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dark .f label{color:#9db0c4}
+body.dark input,body.dark select,body.dark textarea{background:#0f1720;border-color:#2b3b4e;color:#dbe4ee}
+body.dark .cb{background:#182534}
+body.dark .ch.bl{background:#0d2540;color:#8fc4ff}
+body.dark .ch.gr{background:#0d3324;color:#7fe0ac}
+body.dark .ch.or{background:#3a2600;color:#ffcc80}
+body.dark .ch.pu{background:#22164a;color:#c9b3ff}
+body.dark .ch.re{background:#3a0d0d;color:#ff8f8f}
+body.dark .ch.te{background:#0a2e33;color:#7fe6ef}
+body.dark .btn-cl{background:#182534;color:#dbe4ee;border-color:#2b3b4e}
+body.dark .site-btn{background:#0f1720;color:#9db0c4;border-color:#2b3b4e}
+body.dark #userBar{background:#04101f}
+body.dark #fabDropdown{background:#182534}
+body.dark .fabItem{background:#182534;color:#dbe4ee;border-color:#243447}
+body.dark .fabItem:hover{background:#20304333}
+body.dark .priority-btn{background:#0f1720;color:#9db0c4;border-color:#2b3b4e}
 .ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:100;align-items:flex-end;justify-content:center}
 .ov.open{display:flex}
 .modal{background:white;border-radius:14px 14px 0 0;width:100%;max-width:560px;max-height:85vh;display:flex;flex-direction:column}
@@ -73,13 +100,81 @@ textarea{resize:vertical;min-height:55px;line-height:1.6}
 </head>
 <body>
 
+<!-- ====== مؤشر الحفظ التلقائي ====== -->
+<div id="saveIndicator" style="position:fixed;bottom:14px;left:14px;background:#fff;padding:7px 14px;border-radius:20px;font-size:11.5px;box-shadow:0 3px 12px rgba(0,0,0,.18);color:#28a745;font-weight:700;z-index:600;display:none">✅ محفوظ</div>
+
+<!-- ====== مؤشر التقارير المؤجلة (وضع عدم الاتصال) ====== -->
+<div id="pendingBadge" style="position:fixed;bottom:14px;left:14px;background:#e67e22;color:#fff;padding:7px 14px;border-radius:20px;font-size:11.5px;box-shadow:0 3px 12px rgba(0,0,0,.18);font-weight:700;z-index:601;display:none" onclick="flushPendingReports()"></div>
+
+<!-- ====== Login Gate ====== -->
+<div class="ov open" id="loginOv" style="z-index:9999">
+  <div class="modal" style="max-width:360px">
+    <div class="mh" style="background:linear-gradient(135deg,#0a3d6b,#1565a8)">
+      <h3>🔐 تسجيل الدخول — WeCare</h3>
+    </div>
+    <div class="mb">
+      <div class="f" style="margin-bottom:12px">
+        <label>الاسم بالكامل</label>
+        <input type="text" id="loginName" placeholder="اكتب اسمك">
+      </div>
+      <div class="f" style="margin-bottom:12px">
+        <label>الصفة الوظيفية</label>
+        <select id="loginRole">
+          <option value="">اختر...</option>
+          <option value="12">مسعف أولى</option>
+          <option value="13">مسعف متقدم</option>
+          <option value="14">مشرف</option>
+        </select>
+      </div>
+      <div class="f">
+        <label>كود التأكيد</label>
+        <input type="password" id="loginCode" placeholder="اكتب الكود الخاص بصفتك" inputmode="numeric">
+      </div>
+      <div id="loginError" style="color:#c0392b;font-size:12.5px;margin-top:10px;display:none"></div>
+    </div>
+    <div class="mf">
+      <button class="bcp" onclick="doLogin()">✅ دخول</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== شريط المستخدم (يظهر لكل مستخدم مسجّل دخول، بغض النظر عن الصفة) ====== -->
+<div id="userBar" style="display:none;position:fixed;top:0;left:0;right:0;background:#0a3d6b;color:#fff;padding:9px 14px;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:space-between;z-index:650;box-shadow:0 2px 8px rgba(0,0,0,.15)">
+  <span>👤 <span id="userBarLabel"></span></span>
+  <span id="versionLabel" style="font-size:10px;font-weight:600;opacity:.65"></span>
+  <button onclick="confirmLogout()" style="background:#c0392b;color:#fff;border:none;padding:6px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🚪 خروج</button>
+</div>
+
+<!-- ====== Supervisor Floating Menu (زر تنقل إضافي، يظهر بس للمشرف) ====== -->
+<div id="supervisorMenu" style="display:none;position:fixed;top:52px;left:16px;z-index:700">
+  <button id="fabToggle" onclick="toggleFabMenu()" style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0a3d6b,#1565a8);color:#fff;border:none;box-shadow:0 4px 14px rgba(0,0,0,.3);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">☰</button>
+
+  <div id="fabDropdown" style="display:none;position:absolute;top:60px;left:0;background:#fff;border-radius:12px;box-shadow:0 8px 26px rgba(0,0,0,.22);min-width:200px;overflow:hidden">
+    <button onclick="goToView('report')" class="fabItem" id="menuReportBtn">📝 كتابة تقرير</button>
+    <button onclick="goToView('export')" class="fabItem">📊 تصدير تقارير</button>
+    <button onclick="goToView('stats')" class="fabItem">📈 لوحة الإحصائيات</button>
+    <button onclick="goToView('inspection')" class="fabItem">🚑 فحص سيارة</button>
+    <button onclick="openInventory()" class="fabItem">📦 المخزون والصيدلية</button>
+  </div>
+</div>
+<style>
+.fabItem{display:block;width:100%;text-align:right;background:#fff;color:#1a2a3a;border:none;border-top:1px solid #eef2f7;padding:11px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.fabItem:hover{background:#f4f7fa}
+body{padding-top:44px !important}
+</style>
+
 <!-- Header -->
 <div class="hdr taj" id="hdr">
-  <div class="ic">⚕️</div>
-  <div>
-    <h1 id="hdr-title">نظام التقارير الطبية — موقع تاج</h1>
-    <p>Emergency & Critical Care Department — WeCare Company</p>
+  <div style="display:flex;align-items:center;gap:12px;width:100%">
+    <div class="ic">⚕️</div>
+    <div style="flex:1">
+      <h1 id="hdr-title">نظام التقارير الطبية — موقع تاج</h1>
+      <p>Emergency & Critical Care Department — WeCare Company</p>
+    </div>
+    <button id="darkToggle" onclick="toggleDark()" title="الوضع الليلي" style="background:rgba(255,255,255,.18);border:none;color:#fff;width:38px;height:38px;border-radius:50%;font-size:18px;cursor:pointer;flex-shrink:0">🌙</button>
+    <button id="emergencyBtn" onclick="openEmergencyModal()" title="أرقام المشرفين" style="background:#c0392b;border:none;color:#fff;padding:0 14px;height:38px;border-radius:19px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;white-space:nowrap">🚨 حالة حرجة</button>
   </div>
+  <div class="hdr-motto">❝ Care you feel, <span>help to heal</span> ❞</div>
 </div>
 
 <!-- اختيار الموقع -->
@@ -88,6 +183,33 @@ textarea{resize:vertical;min-height:55px;line-height:1.6}
   <div class="site-btns">
     <button class="site-btn taj active" id="btn-taj" onclick="setSite('taj')">🏗️ تاج</button>
     <button class="site-btn saray" id="btn-saray" onclick="setSite('saray')">🏛️ سراي</button>
+  </div>
+</div>
+
+<!-- إحصائيات سريعة -->
+<div class="card" id="dashboardCard">
+  <div class="ch bl" id="dashboardTitle">📊 إحصائيات سريعة (محلي على هذا الجهاز)</div>
+  <div class="cb" style="display:flex;gap:8px;flex-wrap:wrap;text-align:center">
+    <div style="flex:1;min-width:70px">
+      <div id="totalCases" style="font-size:20px;font-weight:800;color:#0a3d6b">0</div>
+      <div style="font-size:10px;color:#667">إجمالي</div>
+    </div>
+    <div style="flex:1;min-width:70px">
+      <div id="criticalCases" style="font-size:20px;font-weight:800;color:#c0392b">0</div>
+      <div style="font-size:10px;color:#667">حرجة</div>
+    </div>
+    <div style="flex:1;min-width:70px">
+      <div id="moderateCases" style="font-size:20px;font-weight:800;color:#e6a817">0</div>
+      <div style="font-size:10px;color:#667">متوسطة</div>
+    </div>
+    <div style="flex:1;min-width:70px">
+      <div id="minorCases" style="font-size:20px;font-weight:800;color:#28a745">0</div>
+      <div style="font-size:10px;color:#667">بسيطة</div>
+    </div>
+    <div style="flex:1;min-width:90px">
+      <div id="avgResponse" style="font-size:20px;font-weight:800;color:#1b6b8c">0</div>
+      <div style="font-size:10px;color:#667">متوسط الاستجابة (دق)</div>
+    </div>
   </div>
 </div>
 
@@ -120,11 +242,19 @@ textarea{resize:vertical;min-height:55px;line-height:1.6}
       <div class="f"><label>الشهر/السنة <span class="rq">*</span></label><input type="text" id="fms" placeholder="يوليو 2026" readonly style="background:#f0f4f8;cursor:default;"></div>
     </div>
     <div class="gap"></div>
-    <div class="g3">
+    <div class="g2">
       <div class="f"><label>ميعاد الإبلاغ</label><input type="time" id="frt"></div>
       <div class="f"><label>ميعاد الوصول</label><input type="time" id="fat"></div>
-    <div class="g3">
-      <div class="f"><label>اسم الحالة <span class="rq">*</span></label><input type="text" id="fn" placeholder="الاسم الكامل"></div>
+    </div>
+    <div class="gap"></div>
+    <div class="f"><label>اسم الحالة <span class="rq">*</span></label>
+      <div style="display:flex;gap:6px">
+        <input type="text" id="fn" placeholder="الاسم الكامل" style="flex:1">
+        <button type="button" onclick="openSearch()" style="white-space:nowrap;background:#1b6b8c;color:#fff;border:none;border-radius:8px;padding:0 12px;font-size:12px;font-weight:700;cursor:pointer">🔍 بحث</button>
+      </div>
+    </div>
+    <div class="gap"></div>
+    <div class="g2">
       <div class="f"><label>السن</label><input type="number" id="fa" placeholder="سنة" min="0" max="120"></div>
       <div class="f"><label>الجنس</label>
         <select id="fg" onchange="populateJobs()"><option value="">—</option><option>ذكر</option><option>أنثى</option></select>
@@ -153,7 +283,22 @@ textarea{resize:vertical;min-height:55px;line-height:1.6}
 <div class="card">
   <div class="ch or">🩺 الشكوى والتشخيص</div>
   <div class="cb">
+    <div class="f"><label>⚡ قالب سريع (اختياري)</label>
+      <select id="quickTemplate" onchange="applyTemplate()">
+        <option value="">— بدون قالب —</option>
+        <option value="headache">صداع نمطي</option>
+        <option value="abdominal">ألم بطن نمطي</option>
+        <option value="minor_wound">جرح بسيط</option>
+        <option value="fever">حرارة مرتفعة</option>
+        <option value="fainting">إغماء بسيط</option>
+        <option value="burn">🔥 حروق</option>
+        <option value="fracture">🦴 كسر</option>
+        <option value="bleeding">🩸 نزيف</option>
+        <option value="chestPain">🫁 ألم صدر</option>
+      </select>
+    </div>
     <div class="f"><label>الشكوى الرئيسية <span class="rq">*</span></label><input type="text" id="fc" placeholder="مثال: قياء مع حمى / vomiting with fever"></div>
+    <div class="gap"></div>
     <div class="gap"></div>
     <div class="f"><label>التاريخ المرضي</label><input type="text" id="fh" placeholder="None  أو  DM, HTN  أو جرثومة المعدة..."></div>
     <div class="dv"></div>
@@ -207,24 +352,121 @@ textarea{resize:vertical;min-height:55px;line-height:1.6}
       <button class="pill" onclick="tog(this)">Psych Support</button>
     </div>
     <div class="dv"></div>
-    <div class="sub">💊 الأدوية والعلاج</div>
-    <div class="pills" id="meds-pills">
-      <button class="pill" onclick="tog(this)">Paracetamol قرص</button>
-      <button class="pill" onclick="tog(this)">Ketolac قرص</button>
-      <button class="pill" onclick="tog(this)">Ketolac IM</button>
-      <button class="pill" onclick="tog(this)">Spasmodigestin قرص</button>
-      <button class="pill" onclick="tog(this)">Visceralgine IM</button>
-      <button class="pill" onclick="tog(this)">Dexamethasone IM</button>
-      <button class="pill" onclick="tog(this)">Primperan IM</button>
-      <button class="pill" onclick="tog(this)">Antinal</button>
-      <button class="pill" onclick="tog(this)">NS / سوائل وريدية</button>
-      <button class="pill" onclick="tog(this)">Glucose IM</button>
-      <button class="pill" onclick="tog(this)">Crosor نقط</button>
-      <button class="pill" onclick="tog(this)">Avil IM</button>
-      <button class="pill" onclick="tog(this)">Spasmofen IM</button>
-      <button class="pill" onclick="tog(this)">Hemolaclar مرهم</button>
-      <button class="pill" onclick="tog(this)">Move Massage</button>
-      <button class="pill" onclick="tog(this)">خافض حرارة أطفال</button>
+    <div class="sub" style="display:flex;justify-content:space-between;align-items:center">
+      <span>💊 الأدوية والعلاج</span>
+      <button type="button" onclick="openInventory()" style="background:#eef6fb;color:#1b6b8c;border:1px solid #cfe4ee;border-radius:7px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer">📦 المخزون</button>
+    </div></div>
+
+<!-- ⭐ جديد: الأكثر استخدامًا -->
+<div class="f" style="margin-bottom:10px">
+  <label>⭐ الأكثر استخدامًا (اضغط لإضافة سريعة)</label>
+  <div class="pills" id="topMedsQuick"></div>
+</div>
+<!-- ⭐ نهاية الإضافة -->
+    <div class="f">
+      <label>اختر من كتالوج الصيدلية</label>
+      <div style="display:flex;gap:6px">
+        <select id="medCatalogSelect" style="flex:1">
+        <optgroup label="حقن وأمبولات">
+          <option value="Avil 45.5 mg/2 ml">Avil 45.5 mg/2 ml — أمبولات</option>
+          <option value="Primperan 10 mg/2 ml">Primperan 10 mg/2 ml — أمبولات</option>
+          <option value="Dicynone 250 mg/2 ml">Dicynone 250 mg/2 ml — أمبولات</option>
+          <option value="Ketolac 30 mg/2 ml">Ketolac 30 mg/2 ml — أمبولات</option>
+          <option value="Spasmofree 5 mg/2 ml">Spasmofree 5 mg/2 ml — أمبولات</option>
+          <option value="Spasmofen 100mg/20mg">Spasmofen 100mg/20mg — أمبولات</option>
+          <option value="Visceralgine 5 mg/2 ml">Visceralgine 5 mg/2 ml — أمبولات</option>
+          <option value="Dexamethasone 8 mg/2 ml">Dexamethasone 8 mg/2 ml — أمبولات</option>
+          <option value="Kapron 500 mg/5 ml">Kapron 500 mg/5 ml — أمبولات</option>
+          <option value="Ceftriaxone 1000 mg (1g Vial)">Ceftriaxone 1000 mg (1g Vial) — فيال حقن</option>
+          <option value="Epifenac (Diclofenac Sodium)">Epifenac (Diclofenac Sodium) — أمبولات</option>
+        </optgroup>
+        <optgroup label="أقراص وكبسولات">
+          <option value="Capoten 25 mg">Capoten 25 mg — علبة / شريط أقراص</option>
+          <option value="Cetal 500 mg">Cetal 500 mg — علبة أقراص</option>
+          <option value="Antodine 20 mg">Antodine 20 mg — علبة أقراص</option>
+          <option value="Corasore-N">Corasore-N — علبة أقراص</option>
+          <option value="Omez 20 mg">Omez 20 mg — علبة كبسولات</option>
+          <option value="Aggrex 75 mg">Aggrex 75 mg — علبة أقراص</option>
+          <option value="Concor 5 mg">Concor 5 mg — علبة أقراص</option>
+          <option value="Epi-Dinitra 5 mg">Epi-Dinitra 5 mg — علبة أقراص تحت اللسان</option>
+          <option value="Ketolac Strip">Ketolac Strip — شريط أقراص</option>
+          <option value="Anergil / Allergy Strip">Anergil / Allergy Strip — شريط أقراص</option>
+          <option value="Spasmofree Strip">Spasmofree Strip — شريط أقراص</option>
+          <option value="Streptoquin Strip / Box">Streptoquin Strip / Box — علبة / شريط أقراص</option>
+          <option value="Epilat 10 mg (Nifedipine)">Epilat 10 mg (Nifedipine) — علبة كبسولات رخوة</option>
+          <option value="Midodrine 2.5 mg">Midodrine 2.5 mg — علبة أقراص</option>
+          <option value="Paramol 500 mg">Paramol 500 mg — شريط / علبة أقراص</option>
+          <option value="Antinal 200 mg">Antinal 200 mg — شريط أقراص</option>
+          <option value="Aspocid 75 mg (Acetylsalicylic acid)">Aspocid 75 mg (Acetylsalicylic acid) — شريط أقراص</option>
+          <option value="Flagyl 500 mg">Flagyl 500 mg — علبة أقراص</option>
+          <option value="Visceralgine 50 mg Tablets">Visceralgine 50 mg Tablets — علبة أقراص</option>
+          <option value="Just-Ridge 100 mg">Just-Ridge 100 mg — علبة أقراص</option>
+          <option value="Vomibrick">Vomibrick — علبة أقراص</option>
+        </optgroup>
+        <optgroup label="جلسات استنشاق ونيبولايزر">
+          <option value="Farcolin Nebulizer Solution">Farcolin Nebulizer Solution — زجاجة نقط نيبولايزر</option>
+          <option value="Atrovent 500 mcg/2 ml">Atrovent 500 mcg/2 ml — أمبولات نيبولايزر بلاستيك</option>
+          <option value="Asmatropim (Ipratropium Bromide)">Asmatropim (Ipratropium Bromide) — أمبولات نيبولايزر بلاستيك</option>
+        </optgroup>
+        <optgroup label="أدوية سائلة ونقط">
+          <option value="Picolax Oral Drops">Picolax Oral Drops — زجاجة نقط</option>
+          <option value="Visceralgine Syrup 120ml">Visceralgine Syrup 120ml — زجاجة شراب</option>
+          <option value="Diasmect Oral Suspension 60ml">Diasmect Oral Suspension 60ml — زجاجة معلق</option>
+        </optgroup>
+        <optgroup label="مطهرات ومحاليل خارجية">
+          <option value="Betadine Antiseptic 10% (60ml)">Betadine Antiseptic 10% (60ml) — زجاجة مطهر</option>
+        </optgroup>
+        <optgroup label="دهانات ومستحضرات موضعية">
+          <option value="MEBO Ointment 15g">MEBO Ointment 15g — أنبوبة مرهم</option>
+          <option value="Borraginol Ointment">Borraginol Ointment — أنبوبة مرهم</option>
+          <option value="Flyer & Vial Gel">Flyer & Vial Gel — أنبوبة جيل</option>
+          <option value="Melano Melo Ointment 30g">Melano Melo Ointment 30g — أنبوبة مرهم</option>
+          <option value="Hemoclar Cream 0.5%">Hemoclar Cream 0.5% — أنبوبة كريم</option>
+          <option value="Betaderm Cream">Betaderm Cream — أنبوبة كريم</option>
+          <option value="Pranos Cream">Pranos Cream — أنبوبة كريم</option>
+          <option value="Calamyl Lotion">Calamyl Lotion — زجاجة لوشن</option>
+          <option value="Garamycin Cream">Garamycin Cream — أنبوبة كريم</option>
+          <option value="Mupirax Ointment 10g">Mupirax Ointment 10g — أنبوبة مرهم</option>
+        </optgroup>
+        <optgroup label="مستلزمات وأجهزة طبية">
+          <option value="Nitrile Examination Gloves (Large)">Nitrile Examination Gloves (Large) — علبة (100 قفاز)</option>
+          <option value="Surgical Face Masks (UNICARE 50 Pcs)">Surgical Face Masks (UNICARE 50 Pcs) — علبة (50 ماسك)</option>
+          <option value="Absorbent Medical Cotton (250g)">Absorbent Medical Cotton (250g) — كيس قطن</option>
+          <option value="Sphygmomanometer (Blood Pressure Monitor)">Sphygmomanometer (Blood Pressure Monitor) — جهاز قياس</option>
+          <option value="Stethoscope">Stethoscope — جهاز فحص</option>
+          <option value="Pulse Oximeter">Pulse Oximeter — جهاز فحص</option>
+          <option value="Glass Clinical Thermometer">Glass Clinical Thermometer — ترمومتر</option>
+          <option value="Nebulizer Mask & Chamber">Nebulizer Mask & Chamber — طقم ماسك</option>
+          <option value="IV Giving Set (جهاز وريد)">IV Giving Set (جهاز وريد) — جهاز نقل محاليل</option>
+          <option value="Pan Tulle Four-M (غيار شاش فازلين)">Pan Tulle Four-M (غيار شاش فازلين) — علبة / مغلفات شاش</option>
+          <option value="Gauze Bandage (رباط شاش)">Gauze Bandage (رباط شاش) — بكرة شاش</option>
+          <option value="Surgical Pad (ضمادة جراحية معقمة)">Surgical Pad (ضمادة جراحية معقمة) — ضمادات معقمة</option>
+          <option value="IV Cannula 22G - Blue (كانيولا زرقاء)">IV Cannula 22G - Blue (كانيولا زرقاء) — قطعة / كانيولا</option>
+          <option value="IV Cannula 20G - Pink (كانيولا بينك/وردية)">IV Cannula 20G - Pink (كانيولا بينك/وردية) — قطعة / كانيولا</option>
+          <option value="IV Cannula 24G - Yellow (كانيولا صفراء)">IV Cannula 24G - Yellow (كانيولا صفراء) — قطعة / كانيولا</option>
+          <option value="Blood Glucose Test Strips (شرايط قياس السكر)">Blood Glucose Test Strips (شرايط قياس السكر) — علبة / شرائط اختباك</option>
+          <option value="Oxygen Flowmeter & Humidifier Jar">Oxygen Flowmeter & Humidifier Jar — جهاز قياس تدفق</option>
+        </optgroup>
+        <optgroup label="محاليل وريدية">
+          <option value="Dextrose 5% Solution (MUP 500ml)">Dextrose 5% Solution (MUP 500ml) — زجاجة / كيس 500 مل</option>
+          <option value="Sodium Chloride 0.9% Solution (GIPCCO 500ml)">Sodium Chloride 0.9% Solution (GIPCCO 500ml) — زجاجة / كيس 500 مل</option>
+          <option value="Ringer's Injection Solution (Otsuka 500ml)">Ringer's Injection Solution (Otsuka 500ml) — زجاجة / كيس 500 مل</option>
+          <option value="Glucose BP Solution (Otsuka 500ml)">Glucose BP Solution (Otsuka 500ml) — زجاجة / كيس 500 مل</option>
+        </optgroup>
+        </select>
+        <button type="button" onclick="addCatalogMed()" style="white-space:nowrap;background:#1b6b8c;color:#fff;border:none;border-radius:8px;padding:0 14px;font-size:12px;font-weight:700;cursor:pointer">➕ إضافة</button>
+      </div>
+    </div>
+    <div class="f" style="margin-top:8px">
+      <label>➕ دواء أو مستلزم آخر (مش موجود في الكتالوج)</label>
+      <div style="display:flex;gap:6px">
+        <input type="text" id="customMedInput" placeholder="اكتب اسم الدواء أو المستلزم..." style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomMed();}">
+        <button type="button" onclick="addCustomMed()" style="white-space:nowrap;background:#1b6b8c;color:#fff;border:none;border-radius:8px;padding:0 14px;font-size:12px;font-weight:700;cursor:pointer">➕ إضافة</button>
+      </div>
+    </div>
+    <div class="f" style="margin-top:8px">
+      <label>الأدوية والمستلزمات المختارة لهذه الحالة</label>
+      <div class="pills" id="selected-meds-pills"></div>
     </div>
     <div class="f"><label>دواء آخر / تفاصيل الإجراء</label>
       <textarea id="fpr" placeholder="أي إجراءات إضافية..."></textarea>
@@ -282,6 +524,15 @@ textarea{resize:vertical;min-height:55px;line-height:1.6}
         </select>
       </div>
     </div>
+    <div class="f">
+      <label>🚦 مستوى الأولوية</label>
+      <div class="priority-pills" id="priorityPills" style="display:flex;gap:8px;margin-top:6px">
+        <button type="button" class="priority-btn minor" data-p="minor" onclick="setPriority('minor')">🟢 بسيطة</button>
+        <button type="button" class="priority-btn moderate active" data-p="moderate" onclick="setPriority('moderate')">🟡 متوسطة</button>
+        <button type="button" class="priority-btn critical" data-p="critical" onclick="setPriority('critical')">🔴 حرجة</button>
+      </div>
+      <input type="hidden" id="fcritical" value="">
+    </div>
     <div class="gap"></div>
     <div class="f"><label>ملاحظات</label>
       <textarea id="fno" placeholder="أي ملاحظات..."></textarea>
@@ -292,10 +543,92 @@ textarea{resize:vertical;min-height:55px;line-height:1.6}
 <!-- أزرار -->
 <div class="btns">
   <button class="btn btn-cl" onclick="clearAll()">🗑️ مسح</button>
-  <button class="btn btn-wa" onclick="openWA()">💬 واتساب</button>
-  <button class="btn btn-xl" onclick="exportExcel()">📥 Excel</button>
-  <button class="btn btn-gg" onclick="saveToSheet()">📊 حفظ في Google Sheets</button>
+  <button class="btn btn-gg" onclick="saveAndShareWA()">📊💬 حفظ وإرسال واتساب</button>
+  <button class="btn btn-pdf" onclick="exportPDF()">📄 PDF</button>
 </div>
+
+<!-- Low Stock Banner -->
+<div id="lowStockBanner" style="display:none;background:#fdecea;border:1.5px solid #f3b8b1;color:#c0392b;border-radius:10px;padding:10px 14px;margin-bottom:13px;font-size:12.5px;font-weight:700;cursor:pointer" onclick="openInventory()"></div>
+
+<!-- Inventory Modal -->
+<div class="ov" id="inventoryOv">
+  <div class="modal">
+    <div class="mh" style="background:linear-gradient(135deg,#1b6b8c,#2f9bc4)">
+      <h3>📦 المخزون والصيدلية — <span id="invSiteLabel">تاج</span></h3>
+      <button onclick="closeInventory()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div class="mb">
+      <div id="invLoading" style="text-align:center;color:#667;padding:20px;font-size:13px">⏳ جاري تحميل المخزون...</div>
+      <div id="invTable" style="display:none"></div>
+    </div>
+  </div>
+</div>
+<style>
+.inv-row{display:flex;align-items:center;gap:8px;padding:9px 4px;border-bottom:1px solid #eef2f7;font-size:12.5px}
+.inv-name{flex:1;font-weight:700}
+.inv-qty{width:46px;text-align:center;font-weight:800;border-radius:7px;padding:4px 0}
+.inv-qty.ok{background:#e8f7ee;color:#1e7a41}
+.inv-qty.low{background:#fdecea;color:#c0392b}
+.inv-add{display:flex;gap:4px;align-items:center}
+.inv-add input{width:52px;padding:5px 6px;font-size:12px;border:1.5px solid #dfe4ea;border-radius:6px}
+.inv-add button{background:#1b6b8c;color:#fff;border:none;border-radius:6px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer}
+</style>
+
+<!-- Emergency Modal -->
+<div class="ov" id="emergencyModal">
+  <div class="modal">
+    <div class="mh" id="emergencyGradientBox" style="background:linear-gradient(135deg,#0a3d6b,#7b1fa2)">
+      <h3>📞 أرقام المشرفين</h3>
+      <button onclick="closeEmergencyModal()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div class="mb" style="padding:0">
+      <div id="emergencyGradientCard" style="background:linear-gradient(135deg,#0a3d6b,#7b1fa2);padding:14px;color:#fff">
+        <div class="supervisor-row">
+          <div class="supervisor-info">
+            <span class="supervisor-name">👨‍💼 يوسف (مشرف الطوارئ)</span>
+            <span class="supervisor-phone">01287400150</span>
+          </div>
+          <div class="supervisor-actions">
+            <a href="tel:+201287400150" class="call-btn">📞 اتصال</a>
+            <button onclick="openWhatsApp('01287400150')" class="whatsapp-btn">💬 واتساب</button>
+            <button class="copy-btn" onclick="copyNumber('01287400150')">📋 نسخ</button>
+          </div>
+        </div>
+        <div class="supervisor-row">
+          <div class="supervisor-info">
+            <span class="supervisor-name">👨‍⚕️ د. يوسف</span>
+            <span class="supervisor-phone">01116812539</span>
+          </div>
+          <div class="supervisor-actions">
+            <a href="tel:+201116812539" class="call-btn">📞 اتصال</a>
+            <button onclick="openWhatsApp('01116812539')" class="whatsapp-btn">💬 واتساب</button>
+            <button class="copy-btn" onclick="copyNumber('01116812539')">📋 نسخ</button>
+          </div>
+        </div>
+        <div class="supervisor-row" style="margin-bottom:0">
+          <div class="supervisor-info">
+            <span class="supervisor-name">👨‍⚕️ د. جاسر</span>
+            <span class="supervisor-phone">01037946089</span>
+          </div>
+          <div class="supervisor-actions">
+            <a href="tel:+201037946089" class="call-btn">📞 اتصال</a>
+            <button onclick="openWhatsApp('01037946089')" class="whatsapp-btn">💬 واتساب</button>
+            <button class="copy-btn" onclick="copyNumber('01037946089')">📋 نسخ</button>
+          </div>
+        </div>
+        <div style="text-align:center;font-size:11px;opacity:.9;margin-top:6px">⚠️ يرجى استخدام هذا الزر فقط في الحالات الحرجة</div>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+.supervisor-row{background:rgba(255,255,255,.14);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.supervisor-info{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.supervisor-name{font-weight:700;font-size:12.5px;color:#fff}
+.supervisor-phone{font-size:11.5px;color:#fff;opacity:.9;direction:ltr}
+.supervisor-actions{display:flex;gap:5px}
+.call-btn,.whatsapp-btn,.copy-btn{flex:1;text-align:center;padding:6px 3px;border-radius:6px;font-size:10.5px;font-weight:700;cursor:pointer;border:none;text-decoration:none;background:rgba(255,255,255,.22);color:#fff}
+</style>
 
 <!-- WA Modal -->
 <div class="ov" id="waOv">
@@ -308,6 +641,26 @@ textarea{resize:vertical;min-height:55px;line-height:1.6}
     <div class="mf">
       <button class="bcp" onclick="copyWA()">📋 نسخ النص</button>
       <button class="bcl" onclick="closeWA()">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- Case Search Modal -->
+<div class="ov" id="searchOv">
+  <div class="modal">
+    <div class="mh" style="background:linear-gradient(135deg,#1b6b8c,#2f9bc4)">
+      <h3>🔍 بحث عن حالة سابقة</h3>
+      <button class="mx" onclick="closeSearch()">✕</button>
+    </div>
+    <div class="mb">
+      <div class="f" style="margin-bottom:10px">
+        <input type="text" id="searchQuery" placeholder="اكتب اسم الحالة..." oninput="if(event.key!=='Enter')return;">
+      </div>
+      <button type="button" onclick="runSearch()" style="width:100%;background:#1b6b8c;color:#fff;border:none;border-radius:8px;padding:10px;font-weight:700;cursor:pointer">بحث</button>
+      <div id="searchResults" style="margin-top:14px"></div>
+    </div>
+    <div class="mf">
+      <button class="bcl" onclick="closeSearch()">إغلاق</button>
     </div>
   </div>
 </div>
@@ -330,9 +683,431 @@ textarea{resize:vertical;min-height:55px;line-height:1.6}
 
 <script>
 // ====== init ======
+const APP_VERSION = 'version 1.5'; // ← غيّر السطر ده بس مع كل تحديث جديد (مثال: version 1.3, version 1.4...)
 const STORAGE_KEY = 'wecare_medical_report_draft_v2';
-const EXCEL_HISTORY_PREFIX = 'wecare_excel_rows_';
 let site = 'taj';
+let currentReportId = '';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxTHJowoY7X2LYhsbe52UppJu1k_AAvER3aW9Mt9GKSR2WZn6pXuilfPZBJWsdlvFvK/exec';
+const EXPORT_ACCESS_KEY = '1253';
+const PENDING_KEY = 'wecarePendingReports';
+const TOP_MEDS_KEY = 'wecare_top_meds';
+const TOP_MEDS_LIMIT = 10;
+
+// ====== رقم مرجعي فريد لكل تقرير ======
+// ====== الوضع الليلي ======
+function toggleDark(){
+  document.body.classList.toggle('dark');
+  const isDark = document.body.classList.contains('dark');
+  localStorage.setItem('wecare_dark', isDark ? 'true' : 'false');
+  document.getElementById('darkToggle').textContent = isDark ? '☀️' : '🌙';
+}
+
+// ====== نافذة اتصال المشرف (حالات الطوارئ) ======
+function openEmergencyModal(){
+  document.getElementById('emergencyModal').classList.add('open');
+}
+function closeEmergencyModal(){
+  document.getElementById('emergencyModal').classList.remove('open');
+}
+function formatEgyptianNumber(phone){
+  let clean = phone.replace(/[^0-9]/g,'');
+  if(clean.startsWith('0')) clean = '20' + clean.substring(1);
+  else if(!clean.startsWith('20')) clean = '20' + clean;
+  return clean;
+}
+function openWhatsApp(phone){
+  const patientName = v('fn') || 'غير محدد';
+  const location = v('fl') || 'غير محدد';
+  const complaint = v('fc') || 'غير محدد';
+  const siteName = site === 'taj' ? 'موقع تاج' : 'موقع سراي';
+  const formatted = formatEgyptianNumber(phone);
+  const message = `🚨 *تنبيه طوارئ من WeCare!*%0A%0A👤 المريض: ${patientName}%0A📍 الموقع: ${location} (${siteName})%0A🩺 الشكوى: ${complaint}%0A%0Aيرجى التوجه فوراً. شكراً لفريق WeCare.`;
+  window.open(`https://wa.me/${formatted}?text=${message}`, '_blank');
+}
+function copyNumber(phone){
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(phone).then(()=>{ toast('✅ تم نسخ الرقم: ' + phone); }).catch(()=>{ fallbackCopyText(phone); });
+  } else { fallbackCopyText(phone); }
+}
+function fallbackCopyText(text){
+  const input = document.createElement('input');
+  input.value = text;
+  document.body.appendChild(input);
+  input.select();
+  document.execCommand('copy');
+  document.body.removeChild(input);
+  toast('✅ تم نسخ الرقم: ' + text);
+}
+
+// ====== قوالب الشكوى الجاهزة (موحّدة: التشخيص + التدخل والعلاج + الإرشادات + تصنيف الحالة) ======
+// (تم دمجها مع applyTemplate بالأسفل)
+
+// ====== لوحة الإحصائيات السريعة (محلية على الجهاز) ======
+function updateDashboard(){
+  // كل المستخدمين يسحبوا الإحصائيات من Google Sheets
+  loadSupervisorDashboard();
+}
+function updateLocalDashboard(){
+  try {
+    document.getElementById('dashboardTitle').textContent = '📊 إحصائيات سريعة (محلي على هذا الجهاز)';
+    let stats = JSON.parse(localStorage.getItem('wecare_stats') || '{"total":0,"critical":0,"moderate":0,"minor":0,"responses":[]}');
+    document.getElementById('totalCases').textContent = stats.total || 0;
+    document.getElementById('criticalCases').textContent = stats.critical || 0;
+    document.getElementById('moderateCases').textContent = stats.moderate || 0;
+    document.getElementById('minorCases').textContent = stats.minor || 0;
+    const avg = stats.responses && stats.responses.length > 0 ?
+      Math.round(stats.responses.reduce((a,b)=>a+b,0) / stats.responses.length) : 0;
+    document.getElementById('avgResponse').textContent = avg;
+  } catch(e){ console.warn('Dashboard error', e); }
+}
+// ====== إحصائيات حقيقية من جوجل شيتس — للمشرف فقط ======
+async function loadSupervisorDashboard(){
+  const titleEl = document.getElementById('dashboardTitle');
+  titleEl.textContent = '📊 إحصائيات حقيقية من جوجل شيتس — ⏳ جاري التحميل...';
+  try {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const end = now.toISOString().split('T')[0];
+    const siteName = site === 'taj' ? 'تاج' : 'سراي';
+    const url = `${SCRIPT_URL}?action=stats&site=${encodeURIComponent(siteName)}&start=${start}&end=${end}&key=${encodeURIComponent(EXPORT_ACCESS_KEY)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if(data.result !== 'success'){
+      titleEl.textContent = '📊 تعذّر تحميل البيانات الحقيقية — ' + (data.message || 'خطأ غير معروف');
+      updateLocalDashboard();
+      return;
+    }
+    const s = data.stats;
+    document.getElementById('totalCases').textContent = s.total || 0;
+    document.getElementById('criticalCases').textContent = s.criticalCount || 0;
+    const eventCounts = (s.byEventType||[]).reduce((sum,e)=>sum+e.count,0);
+    document.getElementById('moderateCases').textContent = Math.max(0, (s.total||0) - (s.criticalCount||0));
+    document.getElementById('minorCases').textContent = '-';
+    document.getElementById('avgResponse').textContent = '-';
+    titleEl.textContent = `📊 إحصائيات حقيقية من جوجل شيتس (شهر ${monthArabicNow()} — ${siteName})`;
+  } catch(e){
+    titleEl.textContent = '📊 تعذّر الاتصال بجوجل شيتس — عرض البيانات المحلية';
+    updateLocalDashboard();
+  }
+}
+function monthArabicNow(){
+  const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  return months[new Date().getMonth()];
+}
+function updateStats(){
+  try {
+    let stats = JSON.parse(localStorage.getItem('wecare_stats') || '{"total":0,"critical":0,"moderate":0,"minor":0,"responses":[]}');
+    stats.total = (stats.total||0) + 1;
+    if(priority === 'critical') stats.critical = (stats.critical||0) + 1;
+    else if(priority === 'moderate') stats.moderate = (stats.moderate||0) + 1;
+    else stats.minor = (stats.minor||0) + 1;
+    const reportTime = v('frt'), arrivalTime = v('fat');
+    if(reportTime && arrivalTime){
+      const r = new Date('1970-01-01T'+reportTime);
+      const a = new Date('1970-01-01T'+arrivalTime);
+      const diff = Math.abs((a - r) / 60000);
+      if(diff < 120) stats.responses.push(Math.round(diff));
+    }
+    localStorage.setItem('wecare_stats', JSON.stringify(stats));
+    updateDashboard();
+  } catch(e){ console.warn('Stats error', e); }
+}
+
+// ====== مستوى الأولوية ======
+let priority = 'moderate';
+function setPriority(p){
+  priority = p;
+  document.querySelectorAll('.priority-btn').forEach(b=>b.classList.toggle('active', b.dataset.p===p));
+  document.getElementById('fcritical').value = p==='critical' ? 'نعم' : '';
+  saveDraft();
+}
+function getPriorityText(){
+  return priority==='critical' ? 'حرجة' : priority==='minor' ? 'بسيطة' : 'متوسطة';
+}
+
+function generateReportId(){
+  const siteCode = site === 'taj' ? 'تاج' : 'سراي';
+  const now = new Date();
+  const dateStr = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
+  const rand = Math.floor(1000 + Math.random()*9000);
+  return `${siteCode}-${dateStr}-${rand}`;
+}
+// ====== نظام المخزون والصيدلية ======
+function openInventory(){
+  document.getElementById('inventoryOv').classList.add('open');
+  loadInventory();
+}
+function closeInventory(){
+  document.getElementById('inventoryOv').classList.remove('open');
+}
+async function loadInventory(){
+  const loading = document.getElementById('invLoading');
+  const tableEl = document.getElementById('invTable');
+  const siteName = site === 'taj' ? 'تاج' : 'سراي';
+  document.getElementById('invSiteLabel').textContent = siteName;
+  loading.style.display = 'block';
+  tableEl.style.display = 'none';
+
+  try {
+    const url = `${SCRIPT_URL}?action=getInventory&site=${encodeURIComponent(siteName)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if(data.result !== 'success'){
+      loading.textContent = '❌ ' + (data.message || 'تعذّر تحميل المخزون');
+      return;
+    }
+    renderInventory(data.items || []);
+    loading.style.display = 'none';
+    tableEl.style.display = 'block';
+  } catch(e){
+    loading.textContent = '❌ تعذّر الاتصال بالسيرفر';
+  }
+}
+function renderInventory(items){
+  const user = getLoggedUser();
+  const isSupervisor = user && user.role === '14';
+  const tableEl = document.getElementById('invTable');
+
+  // تجميع الأصناف حسب الفئة، بنفس ترتيب ظهورها الأول
+  const groups = [];
+  items.forEach(item => {
+    let g = groups.find(g => g.category === item.category);
+    if(!g){ g = { category: item.category, items: [] }; groups.push(g); }
+    g.items.push(item);
+  });
+
+  tableEl.innerHTML = groups.map(g => `
+    <div style="font-weight:800;font-size:12.5px;color:#1b6b8c;margin:14px 4px 4px">${escapeInvHTML(g.category)}</div>
+    ${g.items.map(item => {
+      const low = Number(item.quantity) <= Number(item.threshold);
+      const addControls = isSupervisor ? `
+        <div class="inv-add">
+          <input type="number" min="1" id="add_${sanitizeId(item.name)}" placeholder="كمية">
+          <button onclick="doAddStock('${escapeInvStr(item.name)}')">➕ إضافة</button>
+        </div>` : '';
+      return `
+        <div class="inv-row">
+          <span class="inv-name">${escapeInvHTML(item.name)}<span style="color:#889;font-weight:400;font-size:10.5px"> — ${escapeInvHTML(item.unit||'')}</span></span>
+          <span class="inv-qty ${low?'low':'ok'}">${item.quantity}</span>
+          ${addControls}
+        </div>`;
+    }).join('')}
+  `).join('');
+
+  if(!isSupervisor){
+    tableEl.innerHTML += `<div style="text-align:center;color:#889;font-size:11px;margin-top:10px">إضافة كمية جديدة متاحة للمشرف فقط</div>`;
+  }
+}
+async function doAddStock(medName){
+  const inputId = 'add_' + sanitizeId(medName);
+  const qty = Number(document.getElementById(inputId).value);
+  if(!qty || qty <= 0){ toast('⚠️ اكتب كمية صحيحة','#c0392b'); return; }
+
+  const siteName = site === 'taj' ? 'تاج' : 'سراي';
+  try {
+    const url = `${SCRIPT_URL}?action=addStock&site=${encodeURIComponent(siteName)}&med=${encodeURIComponent(medName)}&qty=${qty}&key=${encodeURIComponent(EXPORT_ACCESS_KEY)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if(data.result !== 'success'){ toast('❌ ' + (data.message||'فشلت الإضافة'),'#c0392b'); return; }
+    toast('✅ تم إضافة الكمية — الرصيد الجديد: ' + data.newQty);
+    loadInventory();
+  } catch(e){
+    toast('❌ تعذّر الاتصال بالسيرفر','#c0392b');
+  }
+}
+function sanitizeId(s){ return String(s).replace(/[^a-zA-Z0-9]/g,'_'); }
+function escapeInvHTML(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function escapeInvStr(s){ return String(s).replace(/'/g, "\\'"); }
+
+// ====== بانر تنبيه نقص المخزون (يظهر تلقائي لو أي دواء وصل لحد التنبيه) ======
+async function checkLowStockBanner(){
+  const siteName = site === 'taj' ? 'تاج' : 'سراي';
+  try {
+    const url = `${SCRIPT_URL}?action=getInventory&site=${encodeURIComponent(siteName)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if(data.result !== 'success') return;
+    const lowItems = (data.items||[]).filter(it => Number(it.quantity) <= Number(it.threshold));
+    const banner = document.getElementById('lowStockBanner');
+    if(lowItems.length > 0){
+      banner.style.display = 'block';
+      banner.textContent = `⚠️ نقص في المخزون (${siteName}): ${lowItems.map(i=>i.name).join('، ')} — دوس هنا لعرض المخزون`;
+    } else {
+      banner.style.display = 'none';
+    }
+  } catch(e){ /* تجاهل أي خطأ هنا، مش حرج لعمل المستخدم */ }
+}
+
+// ====== دواء أو مستلزم آخر (غير موجود في القائمة الجاهزة) ======
+function addMedChip(name, silent) {
+  if(!name) return;
+  const container = document.getElementById('selected-meds-pills');
+  const exists = Array.from(container.querySelectorAll('.pill')).some(p => p.dataset.name === name);
+  if(exists){ toast('⚠️ الصنف ده مضاف بالفعل','#c0392b'); return; }
+
+  const pill = document.createElement('button');
+  pill.type = 'button';
+  pill.className = 'pill on';
+  pill.dataset.name = name;
+  pill.innerHTML = `${escapeInvHTML(name)} <span style="opacity:.7">✕</span>`;
+  pill.onclick = function(){ pill.remove(); saveDraft(); };
+  container.appendChild(pill);
+   if(!silent) bumpMedUsage(name);
+  saveDraft();
+}
+// ====== ⭐ الأكثر استخدامًا (منفصل لكل مسعف) ======
+function getTopMedsKey(){
+  const u = getLoggedUser();
+  const userTag = u && u.name ? u.name.trim().replace(/\s+/g,'_') : 'guest';
+  return TOP_MEDS_KEY + '__' + userTag;
+}
+
+function getTopMedsData(){
+  try {
+    return JSON.parse(localStorage.getItem(getTopMedsKey()) || '{}');
+  } catch(e){ return {}; }
+}
+
+function bumpMedUsage(name){
+  if(!name) return;
+  const data = getTopMedsData();
+  data[name] = (data[name] || 0) + 1;
+  localStorage.setItem(getTopMedsKey(), JSON.stringify(data));
+  renderTopMeds();
+}
+
+function getTopMedsList(){
+  const data = getTopMedsData();
+  return Object.entries(data)
+    .sort((a,b) => b[1] - a[1])
+    .slice(0, TOP_MEDS_LIMIT)
+    .map(([name, count]) => ({ name, count }));
+}
+
+function renderTopMeds(){
+  const container = document.getElementById('topMedsQuick');
+  if(!container) return;
+  const list = getTopMedsList();
+  if(list.length === 0){
+    container.innerHTML = '<div style="font-size:11px;color:#889">لسه مفيش إحصائيات — أول ما تستخدم أدوية هتظهر هنا تلقائي</div>';
+    return;
+  }
+  container.innerHTML = list.map(m =>
+    `<button type="button" class="pill" onclick="quickAddTopMed('${escapeInvStr(m.name)}')">${escapeInvHTML(m.name)} <span style="opacity:.6;font-size:10px">(${m.count})</span></button>`
+  ).join('');
+}
+
+function quickAddTopMed(name){
+  addMedChip(name);
+}
+
+function addCatalogMed(){
+  const select = document.getElementById('medCatalogSelect');
+  addMedChip(select.value);
+}
+function addCustomMed(){
+  const input = document.getElementById('customMedInput');
+  const name = input.value.trim();
+  if(!name){ toast('⚠️ اكتب اسم الدواء أو المستلزم أولاً','#c0392b'); return; }
+  addMedChip(name);
+  input.value = '';
+}
+function getCustomMedsText(){
+  return Array.from(document.querySelectorAll('#selected-meds-pills .pill')).map(p => p.dataset.name).join('، ');
+}
+function restoreCustomMeds(list){
+  const container = document.getElementById('selected-meds-pills');
+  container.innerHTML = '';
+    (list||[]).forEach(name => addMedChip(name, true));
+}
+
+function ensureReportId(){
+  if(!currentReportId){ currentReportId = generateReportId(); saveDraft(); }
+  return currentReportId;
+}
+
+// ====== بحث سريع عن حالة سابقة ======
+function openSearch(){
+  document.getElementById('searchQuery').value = v('fn');
+  document.getElementById('searchResults').innerHTML = '';
+  document.getElementById('searchOv').classList.add('open');
+}
+function closeSearch(){ document.getElementById('searchOv').classList.remove('open'); }
+
+async function runSearch(){
+  const q = v('searchQuery').trim();
+  const resultsEl = document.getElementById('searchResults');
+  if(!q){ resultsEl.innerHTML = '<div style="color:#c0392b;font-size:13px">اكتب اسم للبحث عنه</div>'; return; }
+
+  resultsEl.innerHTML = '<div style="color:#667;font-size:13px">⏳ جاري البحث...</div>';
+  try {
+    const siteName = site === 'taj' ? 'تاج' : 'سراي';
+    const url = `${SCRIPT_URL}?action=search&site=${encodeURIComponent(siteName)}&q=${encodeURIComponent(q)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if(data.result !== 'success'){
+      resultsEl.innerHTML = `<div style="color:#c0392b;font-size:13px">❌ ${data.message||'حصل خطأ'}</div>`;
+      return;
+    }
+    if(!data.matches || data.matches.length === 0){
+      resultsEl.innerHTML = '<div style="color:#667;font-size:13px">لا توجد نتائج مطابقة</div>';
+      return;
+    }
+
+    resultsEl.innerHTML = data.matches.map((m,i) => `
+      <div onclick='fillFromSearch(${i})' style="border:1.5px solid #e0e6ec;border-radius:9px;padding:10px 12px;margin-bottom:8px;cursor:pointer;background:#f8fafb">
+        <div style="font-weight:700;font-size:13.5px">${escapeSearchHTML(m.name)}</div>
+        <div style="font-size:12px;color:#556;margin-top:3px">السن: ${escapeSearchHTML(m.age||'-')} · الوظيفة: ${escapeSearchHTML(m.job||'-')} · آخر تسجيل: ${escapeSearchHTML(m.date||'-')}</div>
+        <div style="font-size:11.5px;color:#889;margin-top:2px">${escapeSearchHTML(m.location||'')}</div>
+      </div>
+    `).join('');
+    window._searchMatches = data.matches;
+  } catch(err){
+    resultsEl.innerHTML = `<div style="color:#c0392b;font-size:13px">❌ تعذّر الاتصال بالسيرفر</div>`;
+  }
+}
+function fillFromSearch(i){
+  const m = window._searchMatches[i];
+  if(!m) return;
+  document.getElementById('fn').value = m.name || '';
+  document.getElementById('fa').value = m.age || '';
+  document.getElementById('fl').value = m.location || '';
+  saveDraft();
+  closeSearch();
+  toast('✅ تم تعبئة بيانات الحالة');
+}
+function escapeSearchHTML(s){
+  return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+// ====== قوالب سريعة موحّدة: تشخيص + تدخل وعلاج (بروتوكولات/أدوية) + إرشادات + تصنيف الحالة ======
+const TEMPLATES = {
+  headache:   { fc:'صداع', fcd:'صداع نمطي غير مصحوب بعلامات خطر', symptoms:['صداع'], protocols:[], meds:['Cetal 500 mg'], education:['الراحة التامة','شرب المياه الكافية'], priority:'minor' },
+  abdominal:  { fc:'ألم بطن', fcd:'ألم بطن نمطي بدون علامات حادة', symptoms:['ألم بطني'], protocols:[], meds:['Spasmofree Strip'], education:['تعويض السوائل / ORS'], priority:'minor' },
+  minor_wound:{ fc:'جرح سطحي', fcd:'جرح بسيط بدون نزيف نشط', symptoms:['جرح'], protocols:['Dressing'], meds:[], education:['كمادات باردة'], priority:'minor' },
+  fever:      { fc:'حرارة مرتفعة', fcd:'ارتفاع في درجة الحرارة', symptoms:['حمى'], protocols:[], meds:['Cetal 500 mg'], education:['شرب المياه الكافية'], priority:'minor' },
+  fainting:   { fc:'إغماء بسيط', fcd:'نوبة إغماء قصيرة، استعاد الوعي', symptoms:['إغماء'], protocols:['O2 Therapy'], meds:[], education:['الراحة التامة'], priority:'moderate' },
+  burn:       { fc:'حروق من الدرجة الثانية', fcd:'حروق ناتجة عن ماء ساخن / نار', symptoms:['جرح'], protocols:['Dressing'], meds:['Hemoclar Cream 0.5%'], education:['كمادات باردة','الراحة التامة'], priority:'moderate' },
+  fracture:   { fc:'اشتباه كسر في الطرف السفلي', fcd:'ألم شديد، تورم، عدم القدرة على الحركة', symptoms:['كدمات'], protocols:['Dressing','IV / Cannula'], meds:['Ketolac 30 mg/2 ml'], education:['الراحة التامة','متابعة الطبيب والأدوية'], priority:'moderate' },
+  bleeding:   { fc:'نزيف حاد من جرح قطعي', fcd:'نزيف مستمر، شحوب، دوخة', symptoms:['جرح','هبوط'], protocols:['Dressing','IV / Cannula','NS / سوائل وريدية'], meds:['Kapron 500 mg/5 ml'], education:['الراحة التامة','طوارئ عند تدهور الحالة'], priority:'critical' },
+  chestPain:  { fc:'ألم صدر ضاغط مع ضيق تنفس', fcd:'ألم يمتد للذراع الأيسر، تعرق', symptoms:['ألم صدر','ضيق تنفس'], protocols:['O2 Therapy','IV / Cannula'], meds:[], education:['الراحة التامة','طوارئ عند تدهور الحالة'], priority:'critical' }
+};
+function applyTemplate(){
+  const key = v('quickTemplate');
+  if(!key || !TEMPLATES[key]) return;
+  const t = TEMPLATES[key];
+  if(t.fc) document.getElementById('fc').value = t.fc;
+  if(t.fcd) document.getElementById('fcd').value = t.fcd;
+  const toActivate = [].concat(t.symptoms||[], t.protocols||[], t.education||[]);
+  document.querySelectorAll('.pill').forEach(p=>{
+    if(toActivate.includes(p.textContent.trim())) p.classList.add('on');
+  });
+  (t.meds||[]).forEach(med => addMedChip(med));
+  if(t.priority) setPriority(t.priority);
+  saveDraft();
+  toast('⚡ تم تطبيق القالب — عدّل أي حقل حسب الحالة الفعلية');
+}
 
 function init(){
   bindFormEvents();
@@ -340,6 +1115,7 @@ function init(){
   restoreDraft();
   applyDefaults();
   setSite(site);
+  renderTopMeds();
 }
 
 function bindFormEvents(){
@@ -387,7 +1163,22 @@ function setSite(s){
     title.textContent='نظام التقارير الطبية — موقع سراي';
     btnS.classList.add('active'); btnT.classList.remove('active');
   }
+  updateEmergencyGradient();
+  updateDashboard();
+  checkLowStockBanner();
   saveDraft();
+}
+
+// ====== تدرج نافذة المشرفين: من لون الموقع المختار إلى لون الموقع التاني ======
+function updateEmergencyGradient(){
+  const tajColor = '#0a3d6b', sarayColor = '#7b1fa2';
+  const gradient = site === 'taj'
+    ? `linear-gradient(135deg, ${tajColor}, ${sarayColor})`
+    : `linear-gradient(135deg, ${sarayColor}, ${tajColor})`;
+  const box = document.getElementById('emergencyGradientBox');
+  const card = document.getElementById('emergencyGradientCard');
+  if(box) box.style.background = gradient;
+  if(card) card.style.background = gradient;
 }
 
 // ====== الوظيفة (مذكر/مؤنث حسب الجنس) ======
@@ -455,12 +1246,109 @@ function getReportSourceValue(){
 // ====== helpers ======
 function tog(el){ el.classList.toggle('on'); saveDraft(); }
 function v(id){ return (document.getElementById(id)||{}).value||''; }
+
+// ====== نظام تسجيل الدخول ======
+const ROLE_CODES = { "12": "مسعف أولى", "13": "مسعف متقدم", "14": "مشرف" };
+const INSPECTION_URL = "inspection.html"; // اسم صفحة فحص السيارة على نفس الموقع
+const EXPORT_URL = "export.html"; // اسم صفحة تصدير التقارير على نفس الموقع
+const STATS_URL = "stats.html"; // اسم صفحة لوحة الإحصائيات على نفس الموقع
+
+function doLogin(){
+  const name = v('loginName').trim();
+  const role = v('loginRole');
+  const code = v('loginCode').trim();
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
+
+  if(!name){ errEl.textContent = '⚠️ اكتب اسمك بالكامل.'; errEl.style.display='block'; return; }
+  if(!role){ errEl.textContent = '⚠️ اختر صفتك الوظيفية.'; errEl.style.display='block'; return; }
+  if(code !== role){ errEl.textContent = '❌ كود التأكيد غير صحيح لهذه الصفة.'; errEl.style.display='block'; return; }
+
+  const user = { name, role, roleLabel: ROLE_CODES[role] };
+  localStorage.setItem('wecareUser', JSON.stringify(user));
+  applyLoggedInUser(user);
+  logAccessEvent(name, ROLE_CODES[role]);
+}
+
+// ====== سجل نشاط تسجيل الدخول (لأغراض المتابعة الإدارية) ======
+function logAccessEvent(name, roleLabel){
+  try {
+    fetch(`${SCRIPT_URL}?action=logAccess&name=${encodeURIComponent(name)}&role=${encodeURIComponent(roleLabel)}`, { mode: 'no-cors' });
+  } catch(e){ /* تجاهل أي خطأ هنا، مش حرج لعمل المستخدم */ }
+}
+
+function logout(){
+  localStorage.removeItem('wecareUser');
+  location.reload();
+}
+
+function applyLoggedInUser(user){
+  document.getElementById('loginOv').classList.remove('open');
+
+  document.getElementById('userBar').style.display = 'flex';
+  document.getElementById('userBarLabel').textContent = user.name + ' — ' + user.roleLabel;
+  document.getElementById('versionLabel').textContent = APP_VERSION;
+
+  if(user.role === '14'){
+    document.getElementById('supervisorMenu').style.display = 'block';
+  }
+
+  // ✅ جديد: تعبئة اسم المسعف تلقائيًا من اسم المستخدم
+  const paField = document.getElementById('fpa');
+  if(paField) paField.value = user.name;
+  saveDraft();
+    // ✅ جديد: نعرض الأدوية الأكثر استخدامًا الخاصة بالمستخدم ده
+  renderTopMeds();
+
+  updateDashboard();
+}
+
+function confirmLogout(){
+  if(confirm('هل تريد تسجيل الخروج؟')) logout();
+}
+
+// ====== قائمة المشرف العائمة ======
+function toggleFabMenu(){
+  const dd = document.getElementById('fabDropdown');
+  dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+}
+document.addEventListener('click', function(e){
+  const wrap = document.getElementById('supervisorMenu');
+  const dd = document.getElementById('fabDropdown');
+  if(dd && dd.style.display === 'block' && wrap && !wrap.contains(e.target)){
+    dd.style.display = 'none';
+  }
+});
+
+function goToView(view){
+  if(view === 'report'){ return; } // إحنا أصلاً في صفحة التقرير
+  if(view === 'export'){ location.href = EXPORT_URL; return; }
+  if(view === 'stats'){ location.href = STATS_URL; return; }
+  if(view === 'inspection'){ location.href = INSPECTION_URL; return; }
+}
+
+function getLoggedUser(){
+  try {
+    const raw = localStorage.getItem('wecareUser');
+    return raw ? JSON.parse(raw) : null;
+  } catch(e){ return null; }
+}
+
+(function checkLoginOnLoad(){
+  const user = getLoggedUser();
+  if(user && user.name && user.role){
+    applyLoggedInUser(user);
+  }
+})();
 function onPills(id){ return Array.from(document.querySelectorAll('#'+id+' .pill.on')).map(b=>b.textContent).join('، '); }
 function getSymptomsText(){
+  // ✅ جديد: استبعاد أزرار الأدوية من خانة الأعراض/الشكوى
+  const medsContainer = document.getElementById('selected-meds-pills');
   const excluded = new Set(['ABCDE','IPSGs','ITLS','BLS','ALS','Airway Mgmt','O2 Therapy','IV / Cannula','Nebulizer','Dressing','إحالة مستشفى','Psych Support',
     'الراحة التامة','شرب المياه الكافية','التغذية السليمة','تعويض السوائل / ORS','السلامة الغذائية','أطعمة خفيفة ومسلوقة','كمادات باردة','البعد عن الشمس','ممارسة الرياضة','النوم الكافي','متابعة internist','متابعة dentist','متابعة urologist','متابعة nephrologist','متابعة dermatologist','متابعة الطبيب والأدوية','طوارئ عند تدهور الحالة','قواعد السلامة أثناء العمل',
     'Paracetamol قرص','Ketolac قرص','Ketolac IM','Spasmodigestin قرص','Visceralgine IM','Dexamethasone IM','Primperan IM','Antinal','NS / سوائل وريدية','Glucose IM','Crosor نقط','Avil IM','Spasmofen IM','Hemolaclar مرهم','Move Massage','خافض حرارة أطفال']);
   return Array.from(document.querySelectorAll('.pill.on'))
+    .filter(b => !medsContainer || !medsContainer.contains(b))
     .filter(b=>!excluded.has(b.textContent))
     .map(b=>b.textContent)
     .join('، ');
@@ -471,17 +1359,26 @@ function toast(msg,c='#1b6b3a'){
   t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000);
 }
 function collectDraft(){
-  const draft = { site };
+  const draft = { site, priority, reportId: currentReportId };
   document.querySelectorAll('input,select,textarea').forEach(el=>{ draft[el.id] = el.value; });
   document.querySelectorAll('.pill').forEach(p=>{ draft['pill:' + p.textContent.trim()] = p.classList.contains('on'); });
+  draft.customMeds = Array.from(document.querySelectorAll('#selected-meds-pills .pill')).map(p => p.dataset.name);
   return draft;
 }
 function saveDraft(){
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(collectDraft()));
+    showSaveIndicator();
   } catch (e) {
     console.warn('Could not save draft', e);
   }
+}
+function showSaveIndicator(){
+  const el = document.getElementById('saveIndicator');
+  if(!el) return;
+  el.style.display = 'block';
+  clearTimeout(showSaveIndicator._t);
+  showSaveIndicator._t = setTimeout(()=>{ el.style.display='none'; }, 1400);
 }
 function restoreDraft(){
   try {
@@ -489,6 +1386,9 @@ function restoreDraft(){
     if(!raw) return;
     const draft = JSON.parse(raw);
     if(draft.site) site = draft.site;
+    if(draft.reportId) currentReportId = draft.reportId;
+    if(draft.priority) setPriority(draft.priority);
+    restoreCustomMeds(draft.customMeds);
     document.querySelectorAll('input,select,textarea').forEach(el=>{ if(draft[el.id] !== undefined) el.value = draft[el.id]; });
     document.querySelectorAll('.pill').forEach(p=>{ const key='pill:' + p.textContent.trim(); p.classList.toggle('on', !!draft[key]); });
     // إعادة بناء قائمة الوظائف حسب الجنس المستعاد، ثم استرجاع القيمة المحفوظة
@@ -501,18 +1401,6 @@ function restoreDraft(){
     console.warn('Could not restore draft', e);
   }
 }
-function getExcelHeaders(){
-  return ['التاريخ','ميعاد الإبلاغ','ميعاد الوصول','جهة الإبلاغ','اسم الحالة','العمر','الجنس','الوظيفة','مكان الحدث','الشكوى','التاريخ المرضي','الأعراض','تفاصيل إضافية','BP','SpO2','GCS','RBS','H.R','Temp','البروتوكولات','الأدوية','التعليمات','تفاصيل الإجراء','نتيجة التدخل','اسم المسعف','نوع الحدث','ملاحظات','نص التقرير','الموقع','وقت الحفظ'];
-}
-function getExcelRow(){
-  return [
-    v('fd'), v('frt'), v('fat'), getReportSourceValue(), v('fn'), v('fa'), v('fg'), getJobValue(), v('fl'), v('fc'),
-    v('fh'), getSymptomsText(), v('fcd'), v('vbp'), v('vsp'), v('vgc'), v('vrb'), v('vhr'), v('vtm'),
-    onPills('proto-pills'), onPills('meds-pills'), onPills('edu-pills'), v('fpr'), v('foc'), v('fpa'), v('fet'), v('fno'), build(),
-    site==='taj' ? 'تاج' : 'سراي', new Date().toLocaleString('ar-EG')
-  ];
-}
-
 // ====== build report ======
 function build(){
   const siteName = site==='taj' ? 'فريق إسعاف موقع تاج' : 'فريق إسعاف موقع سراي';
@@ -520,7 +1408,7 @@ function build(){
         gcs=v('vgc')||'15/15', rbs=v('vrb')||'////', hr=v('vhr')||'///', temp=v('vtm')||'/////';
 
   const proto = onPills('proto-pills') || 'ABCDE, IPSGs, ITLS';
-  const meds  = onPills('meds-pills');
+  const meds  = getCustomMedsText();
   const edu   = onPills('edu-pills');
   const symp  = getSymptomsText();
 
@@ -529,6 +1417,9 @@ function build(){
   if(symp) cl += `، ${symp}`;
 
   let t = '';
+
+  // ===== الرقم المرجعي =====
+  t += `🔖 رقم التقرير: ${ensureReportId()}\n\n`;
 
   // ===== العنوان =====
   t += `⚕️ تقرير تدخل طبي`;
@@ -883,45 +1774,12 @@ function copyWA(){
   }
 }
 
-// ====== Excel Export ======
-function exportExcel(){
-  if(!v('fn')){ toast('⚠️ أدخل اسم الحالة أولاً','#c0392b'); return; }
-  if(!v('fd')){ toast('⚠️ اختر التاريخ أولاً','#c0392b'); return; }
-  
-  const siteName = site==='taj' ? 'تاج' : 'سراي';
-  const monthNames = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
-  const dateVal = v('fd');
-  const date = new Date(dateVal + 'T00:00:00');
-  const monthNum = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  const monthName = monthNames[date.getMonth()];
-  
-  const headers = getExcelHeaders();
-  const row = getExcelRow();
-  const storageKey = EXCEL_HISTORY_PREFIX + site + '_' + year + '_' + monthNum;
-  let rows = [];
-  try {
-    rows = JSON.parse(localStorage.getItem(storageKey) || '[]');
-  } catch (e) {
-    console.warn('Could not read Excel history', e);
-  }
-  if(!rows.length){ rows.push(headers); }
-  rows.push(row);
-  localStorage.setItem(storageKey, JSON.stringify(rows));
-
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{wch:16},{wch:12},{wch:12},{wch:16},{wch:20},{wch:8},{wch:8},{wch:16},{wch:20},{wch:20},{wch:20},{wch:35},{wch:25},{wch:12},{wch:10},{wch:10},{wch:10},{wch:10},{wch:10},{wch:24},{wch:24},{wch:24},{wch:24},{wch:20},{wch:20},{wch:20},{wch:95},{wch:12},{wch:18}];
-  XLSX.utils.book_append_sheet(wb, ws, 'تقارير');
-  const fname = `تقارير_${siteName}_${monthName}_${year}.xlsx`;
-  XLSX.writeFile(wb, fname);
-  toast(`✅ تم إنشاء: ${fname}\n📂 المجلد: Downloads`);
-}
-
 // ====== clear ======
 function clearAll(){
   if(!confirm('مسح كل البيانات؟')) return;
-  document.querySelectorAll('input,select,textarea').forEach(el=>{ if(el.type!=='date' && el.type!=='number') el.value=''; });
+    document.querySelectorAll('input,select,textarea').forEach(el=>{
+    if(el.type!=='date' && el.type!=='number' && el.id!=='fpa') el.value='';
+  });
   document.getElementById('fd').value = new Date().toISOString().split('T')[0];
   document.getElementById('frt').value = new Date().toTimeString().slice(0,5);
   document.getElementById('vgc').value = '15/15';
@@ -930,21 +1788,98 @@ function clearAll(){
     p.classList.remove('on');
     if(['ABCDE','IPSGs','ITLS'].includes(p.textContent)) p.classList.add('on');
   });
+  document.getElementById('selected-meds-pills').innerHTML = '';
+  currentReportId = ''; // رقم مرجعي جديد للتقرير الجديد
+  setPriority('moderate');
   saveDraft();
   toast('🗑️ تم مسح الفورم','#555');
 }
 
+if(localStorage.getItem('wecare_dark') === 'true'){
+  document.body.classList.add('dark');
+  document.getElementById('darkToggle').textContent = '☀️';
+}
+updateDashboard();
 init();
+
+// ✅ جديد: ضمان إن اسم المسعف = اسم المستخدم الحالي، حتى بعد استرجاع المسودة
+(function enforceParamedicName(){
+  const u = getLoggedUser();
+  if(u && u.name){
+    const paField = document.getElementById('fpa');
+    if(paField) paField.value = u.name;
+    saveDraft();
+  }
+})();
+
 document.getElementById('waOv').addEventListener('click',function(e){ if(e.target===this) closeWA(); });
 
 // ====== Google Apps Script URL (سكربت واحد موحّد لكل المواقع) ======
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxTHJowoY7X2LYhsbe52UppJu1k_AAvER3aW9Mt9GKSR2WZn6pXuilfPZBJWsdlvFvK/exec';
 
 // ====== Save to Google Sheets ======
+
+// ====== شعار WeCare (نفس شعار تقرير فحص السيارة) ======
+const WECARE_LOGO = "data:image/jpeg;base64,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";
+
+// ====== تصدير PDF بهوية WeCare (شعار + علامة مائية + تذييل) ======
+function exportPDF(){
+  if(!v('fn')){ toast('⚠️ أدخل اسم الحالة أولاً','#c0392b'); return; }
+  const content = build();
+  const win = window.open('', '_blank', 'width=800,height=600');
+  if(!win){ toast('⚠️ يرجى السماح بالنوافذ المنبثقة','#c0392b'); return; }
+  const siteName = site==='taj' ? 'موقع تاج' : 'موقع سراي';
+  win.document.write(`
+    <html dir="rtl">
+    <head><title>تقرير WeCare — ${v('fn')}</title>
+    <style>
+      body{font-family:'Segoe UI',Tahoma,sans-serif;padding:26px;direction:rtl;position:relative;color:#1E2430}
+      .p-watermark{position:fixed;inset:0;z-index:-1;pointer-events:none;
+        background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='170'><text x='6' y='115' font-family='Arial' font-weight='bold' font-size='30' fill='%230B2545' fill-opacity='0.075' transform='rotate(-28 130 85)'>WeCare</text></svg>");
+        background-repeat:repeat}
+      .p-header{display:flex;align-items:center;gap:14px;border-bottom:3px solid #0B2545;padding-bottom:14px;margin-bottom:18px}
+      .p-logo{width:56px;height:56px;border-radius:10px;overflow:hidden;flex-shrink:0}
+      .p-logo img{width:100%;height:100%;object-fit:cover}
+      .p-brand{font-weight:800;color:#0B2545;font-size:20px}
+      .p-dept{font-size:11px;color:#6B7280}
+      .p-meta{margin-inline-start:auto;text-align:left;font-size:12px;color:#1E2430}
+      .report{white-space:pre-wrap;font-size:13.5px;line-height:2}
+      .p-footer{text-align:center;margin-top:26px;font-size:12px;color:#6B7280}
+      .p-footer .tag{font-weight:800;color:#0B2545;font-size:13px;margin-top:3px}
+    </style>
+    </head>
+    <body>
+      <div class="p-watermark"></div>
+      <div class="p-header">
+        <div class="p-logo"><img src="${WECARE_LOGO}"></div>
+        <div>
+          <div class="p-brand">WeCare</div>
+          <div class="p-dept">تقرير تدخل طبي — ${siteName}</div>
+        </div>
+        <div class="p-meta"><div><b>التاريخ:</b> ${v('fd')||'-'}</div></div>
+      </div>
+      <div class="report">${content}</div>
+      <div class="p-footer"><div>Emergency and Critical Care Department</div><div class="tag">WeCare Company</div></div>
+      <script>window.onload = function(){ window.print(); }<\/script>
+    </body>
+    </html>
+  `);
+  win.document.close();
+}
+
+// ====== حفظ في جوجل شيتس ثم فتح الواتساب (بالترتيب ده، عشان نضمن إن الحفظ حصل فعلاً) ======
+function saveAndShareWA(){
+  if(!v('fn')){ toast('⚠️ أدخل اسم الحالة أولاً','#c0392b'); return; }
+  saveToSheet();
+  openWA();
+}
+
 function saveToSheet(){
   if(!v('fn')){ toast('⚠️ أدخل اسم الحالة أولاً','#c0392b'); return; }
   const url = SCRIPT_URL;
   if(!url){ toast('⚠️ رابط Google Apps Script غير مُعد','#c0392b'); return; }
+
+  updateStats();
+  const loggedUser = getLoggedUser();
 
   const payload = {
     "الموقع": site === 'taj' ? 'تاج' : 'سراي',
@@ -958,7 +1893,13 @@ function saveToSheet(){
     "ميعاد الوصول": v('fat'),
     "مكان الحدث": v('fl'),
     "اسم المسعف": v('fpa'),
-    "جهة الإبلاغ": getReportSourceValue()
+    "جهة الإبلاغ": getReportSourceValue(),
+    "اسم المستخدم": loggedUser ? loggedUser.name : '',
+    "الصفة الوظيفية": loggedUser ? loggedUser.roleLabel : '',
+    "الرقم المرجعي": ensureReportId(),
+    "حالة حرجة": priority==='critical' ? 'نعم' : '',
+    "الأولوية": getPriorityText(),
+    "الأدوية المصروفة": getCustomMedsText()
   };
 
   const ov = document.createElement('div'); ov.className='ov open';
@@ -967,13 +1908,51 @@ function saveToSheet(){
 
   fetch(url, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
     .then(()=>{
-      toast('✅ تم الحفظ في Google Sheets');
+      toast('✅ تم الحفظ — رقم التقرير: ' + payload["الرقم المرجعي"]);
       document.body.removeChild(ov);
+      if(payload["الأدوية المصروفة"]) setTimeout(checkLowStockBanner, 2500);
     }).catch(err=>{
-      toast('⚠️ فشل الاتصال: ' + (err.message||''),'#c0392b');
+      // فشل الاتصال (غالبًا مفيش نت) — نخزّن التقرير محليًا ونحاول نبعته تلقائي لما النت يرجع
+      queuePendingReport(payload);
+      toast('📴 لا يوجد اتصال — تم حفظ التقرير مؤقتًا وسيُرسل تلقائيًا عند عودة النت','#e67e22');
       if(document.body.contains(ov)) document.body.removeChild(ov);
     });
 }
+
+// ====== وضع عدم الاتصال: تخزين وإعادة إرسال التقارير المؤجلة ======
+function queuePendingReport(payload){
+  const queue = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]');
+  queue.push(payload);
+  localStorage.setItem(PENDING_KEY, JSON.stringify(queue));
+  updatePendingBadge();
+}
+function updatePendingBadge(){
+  const badge = document.getElementById('pendingBadge');
+  const queue = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]');
+  if(queue.length > 0){
+    badge.style.display = 'block';
+    badge.textContent = `📴 ${queue.length} تقرير بانتظار الإرسال — اضغط للمحاولة`;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+async function flushPendingReports(){
+  const queue = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]');
+  if(queue.length === 0) return;
+
+  const results = await Promise.allSettled(
+    queue.map(payload => fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }))
+  );
+  const remaining = queue.filter((_, i) => results[i].status === 'rejected');
+  localStorage.setItem(PENDING_KEY, JSON.stringify(remaining));
+  updatePendingBadge();
+
+  const sentCount = queue.length - remaining.length;
+  if(sentCount > 0) toast(`✅ تم إرسال ${sentCount} تقرير كان مؤجل`);
+}
+window.addEventListener('online', flushPendingReports);
+updatePendingBadge();
+flushPendingReports();
 </script>
 </body>
 </html>
