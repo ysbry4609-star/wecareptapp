@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تقرير التدخل الطبي — WeCare</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ====== مؤشر الحفظ التلقائي ====== -->
+<div id="saveIndicator" style="position:fixed;bottom:14px;left:14px;background:#fff;padding:7px 14px;border-radius:20px;font-size:11.5px;box-shadow:0 3px 12px rgba(0,0,0,.18);color:#28a745;font-weight:700;z-index:600;display:none">✅ محفوظ</div>
+
+<!-- ====== مؤشر التقارير المؤجلة ====== -->
+<div id="pendingBadge" style="position:fixed;bottom:14px;left:14px;background:#e67e22;color:#fff;padding:7px 14px;border-radius:20px;font-size:11.5px;box-shadow:0 3px 12px rgba(0,0,0,.18);font-weight:700;z-index:601;display:none" onclick="flushPendingReports()"></div>
+
+<!-- ====== Login Gate ====== -->
+<div class="ov open" id="loginOv" style="z-index:9999">
+  <div class="modal" style="max-width:360px">
+    <div class="mh" style="background:linear-gradient(135deg,#0a3d6b,#1565a8)">
+      <h3>🔐 تسجيل الدخول — WeCare</h3>
+    </div>
+    <div class="mb">
+      <div class="f" style="margin-bottom:12px">
+        <label>الاسم بالكامل</label>
+        <input type="text" id="loginName" placeholder="اكتب اسمك">
+      </div>
+      <div class="f" style="margin-bottom:12px">
+        <label>الصفة الوظيفية</label>
+        <select id="loginRole">
+          <option value="">اختر...</option>
+          <option value="12">مسعف أولى</option>
+          <option value="13">مسعف متقدم</option>
+          <option value="14">مشرف</option>
+        </select>
+      </div>
+      <div class="f">
+        <label>كود التأكيد</label>
+        <input type="password" id="loginCode" placeholder="اكتب الكود الخاص بصفتك" inputmode="numeric">
+      </div>
+      <div id="loginError" style="color:#c0392b;font-size:12.5px;margin-top:10px;display:none"></div>
+    </div>
+    <div class="mf">
+      <button class="bcp" onclick="doLogin()">✅ دخول</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== شريط المستخدم ====== -->
+<div id="userBar" style="display:none;position:fixed;top:0;left:0;right:0;background:#0a3d6b;color:#fff;padding:9px 14px;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:space-between;z-index:650;box-shadow:0 2px 8px rgba(0,0,0,.15)">
+  <span>👤 <span id="userBarLabel"></span></span>
+  <span id="versionLabel" style="font-size:10px;font-weight:600;opacity:.65"></span>
+  <button onclick="confirmLogout()" style="background:#c0392b;color:#fff;border:none;padding:6px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🚪 خروج</button>
+</div>
+
+<!-- ====== Supervisor Floating Menu ====== -->
+<div id="supervisorMenu" style="display:none;position:fixed;top:52px;left:16px;z-index:700">
+  <button id="fabToggle" onclick="toggleFabMenu()" style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0a3d6b,#1565a8);color:#fff;border:none;box-shadow:0 4px 14px rgba(0,0,0,.3);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">☰</button>
+
+  <div id="fabDropdown" style="display:none;position:absolute;top:60px;left:0;background:#fff;border-radius:12px;box-shadow:0 8px 26px rgba(0,0,0,.22);min-width:200px;overflow:hidden">
+    <button onclick="goToView('report')" class="fabItem" id="menuReportBtn">📝 كتابة تقرير</button>
+    <button onclick="goToView('export')" class="fabItem">📊 تصدير تقارير</button>
+    <button onclick="goToView('stats')" class="fabItem">📈 لوحة الإحصائيات</button>
+    <button onclick="goToView('inspection')" class="fabItem">🚑 فحص سيارة</button>
+    <button onclick="openInventory()" class="fabItem">📦 المخزون والصيدلية</button>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="hdr taj" id="hdr">
+  <div style="display:flex;align-items:center;gap:12px;width:100%">
+    <div class="ic">⚕️</div>
+    <div style="flex:1">
+      <h1 id="hdr-title">نظام التقارير الطبية — موقع تاج</h1>
+      <p>Emergency & Critical Care Department — WeCare Company</p>
+    </div>
+    <button id="darkToggle" onclick="toggleDark()" title="الوضع الليلي" style="background:rgba(255,255,255,.18);border:none;color:#fff;width:38px;height:38px;border-radius:50%;font-size:18px;cursor:pointer;flex-shrink:0">🌙</button>
+    <button id="emergencyBtn" onclick="openEmergencyModal()" title="أرقام المشرفين" style="background:#c0392b;border:none;color:#fff;padding:0 14px;height:38px;border-radius:19px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;white-space:nowrap">🚨 حالة حرجة</button>
+  </div>
+  <div class="hdr-motto">❝ Care you feel, <span>help to heal</span> ❞</div>
+</div>
+
+<!-- اختيار الموقع -->
+<div class="site-bar">
+  <label>📍 الموقع:</label>
+  <div class="site-btns">
+    <button class="site-btn taj active" id="btn-taj" onclick="setSite('taj')">🏗️ تاج</button>
+    <button class="site-btn saray" id="btn-saray" onclick="setSite('saray')">🏛️ سراي</button>
+  </div>
+</div>
+
+<!-- إحصائيات سريعة -->
+<div class="card" id="dashboardCard">
+  <div class="ch bl" id="dashboardTitle">📊 إحصائيات سريعة (محلي على هذا الجهاز)</div>
+  <div class="cb" style="display:flex;gap:8px;flex-wrap:wrap;text-align:center">
+    <div style="flex:1;min-width:70px">
+      <div id="totalCases" style="font-size:20px;font-weight:800;color:#0a3d6b">0</div>
+      <div style="font-size:10px;color:#667">إجمالي</div>
+    </div>
+    <div style="flex:1;min-width:70px">
+      <div id="criticalCases" style="font-size:20px;font-weight:800;color:#c0392b">0</div>
+      <div style="font-size:10px;color:#667">حرجة</div>
+    </div>
+    <div style="flex:1;min-width:70px">
+      <div id="moderateCases" style="font-size:20px;font-weight:800;color:#e6a817">0</div>
+      <div style="font-size:10px;color:#667">متوسطة</div>
+    </div>
+    <div style="flex:1;min-width:70px">
+      <div id="minorCases" style="font-size:20px;font-weight:800;color:#28a745">0</div>
+      <div style="font-size:10px;color:#667">بسيطة</div>
+    </div>
+    <div style="flex:1;min-width:90px">
+      <div id="avgResponse" style="font-size:20px;font-weight:800;color:#1b6b8c">0</div>
+      <div style="font-size:10px;color:#667">متوسط الاستجابة (دق)</div>
+    </div>
+  </div>
+</div>
+
+<!-- مرجع تشخيص سريع -->
+<div class="card">
+  <div class="ch re">🔍 مرجع تشخيص سريع</div>
+  <div class="cb">
+    <div class="pills" id="ref-pills">
+      <button type="button" class="pill" onclick="openRef('headache')">🤕 صداع</button>
+      <button type="button" class="pill" onclick="openRef('abdominal')">🍽️ ألم بطن</button>
+      <button type="button" class="pill" onclick="openRef('wound')">🩹 جروح/حوادث بسيطة</button>
+      <button type="button" class="pill" onclick="openRef('dental')">🦷 ألم أسنان</button>
+      <button type="button" class="pill" onclick="openRef('fever')">🌡️ حرارة/التهاب</button>
+      <button type="button" class="pill" onclick="openRef('bp')">💉 ضغط دم</button>
+      <button type="button" class="pill" onclick="openRef('syncope')">😵 إغماء/هبوط عام</button>
+      <button type="button" class="pill" onclick="openRef('chest')">🫁 ألم صدر/ضيق تنفس</button>
+      <button type="button" class="pill" onclick="openRef('headtotoe')">🩺 الفحص الشامل (Head-to-Toe)</button>
+      <button type="button" class="pill" onclick="openRef('trauma')">🚑 تقييم إصابة (Primary Survey)</button>
+      <button type="button" class="pill" onclick="openRef('shock')">🩸 التعرف على نوع الصدمة</button>
+    </div>
+  </div>
+</div>
+
+<!-- بيانات الحالة -->
+<div class="card">
+  <div class="ch bl">👤 بيانات الحالة</div>
+  <div class="cb">
+    <div class="g2">
+      <div class="f"><label>التاريخ <span class="rq">*</span></label><input type="date" id="fd" onchange="updateMonthYear()"></div>
+      <div class="f"><label>الشهر/السنة <span class="rq">*</span></label><input type="text" id="fms" placeholder="يوليو 2026" readonly style="background:#f0f4f8;cursor:default;"></div>
+    </div>
+    <div class="gap"></div>
+    <div class="g2">
+      <div class="f"><label>ميعاد الإبلاغ</label><input type="time" id="frt"></div>
+      <div class="f"><label>ميعاد الوصول</label><input type="time" id="fat"></div>
+    </div>
+    <div class="gap"></div>
+    <div class="f"><label>اسم الحالة <span class="rq">*</span></label>
+      <div style="display:flex;gap:6px">
+        <input type="text" id="fn" placeholder="الاسم الكامل" style="flex:1">
+        <button type="button" onclick="openSearch()" style="white-space:nowrap;background:#1b6b8c;color:#fff;border:none;border-radius:8px;padding:0 12px;font-size:12px;font-weight:700;cursor:pointer">🔍 بحث</button>
+      </div>
+    </div>
+    <div class="gap"></div>
+    <div class="g2">
+      <div class="f"><label>السن</label><input type="number" id="fa" placeholder="سنة" min="0" max="120"></div>
+      <div class="f"><label>الجنس</label>
+        <select id="fg" onchange="populateJobs()"><option value="">—</option><option>ذكر</option><option>أنثى</option></select>
+      </div>
+    </div>
+    <div class="gap"></div>
+    <div class="g3">
+      <div class="f"><label>الوظيفة</label>
+        <select id="fj" onchange="onJobChange()"></select>
+        <input type="text" id="fjOther" placeholder="اكتب الوظيفة..." style="display:none;margin-top:6px">
+      </div>
+      <div class="f"><label>مكان الحدث <span class="rq">*</span></label><input type="text" id="fl" placeholder="مثال: بلوك 4، عمارة 5"></div>
+      <div class="f"><label>جهة الإبلاغ</label>
+        <select id="fr" onchange="onReportSourceChange()">
+          <option value="">اختر...</option>
+          <option>كنترول روم</option><option>الأمن الداخلي</option><option>السيفتي</option>
+          <option>زيارة</option><option>مباشر</option><option>أخرى</option>
+        </select>
+        <input type="text" id="frOther" placeholder="اكتب جهة الإبلاغ..." style="display:none;margin-top:6px">
+        <div id="fclaimWrap" style="display:none;margin-top:8px">
+          <label>البلاغ اتوصف وقت الاتصال كـ <span class="rq">*</span></label>
+          <select id="fclaim">
+            <option value="">اختر...</option><option>خطيرة</option><option>عادية</option><option>غير معروف</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- الشكوى -->
+<div class="card">
+  <div class="ch or">🩺 الشكوى والتشخيص</div>
+  <div class="cb">
+    <div class="f"><label>⚡ قالب سريع (اختياري)</label>
+      <select id="quickTemplate" onchange="applyTemplate()">
+        <option value="">— بدون قالب —</option>
+        <option value="headache">صداع نمطي</option>
+        <option value="abdominal">ألم بطن نمطي</option>
+        <option value="minor_wound">جرح بسيط</option>
+        <option value="fever">حرارة مرتفعة</option>
+        <option value="fainting">إغماء بسيط</option>
+        <option value="burn">🔥 حروق</option>
+        <option value="fracture">🦴 كسر</option>
+        <option value="bleeding">🩸 نزيف</option>
+        <option value="chestPain">🫁 ألم صدر</option>
+      </select>
+    </div>
+    <div class="f"><label>الشكوى الرئيسية <span class="rq">*</span></label><input type="text" id="fc" placeholder="مثال: قياء مع حمى / vomiting with fever"></div>
+    <div class="gap"></div>
+    <div class="gap"></div>
+    <div class="f"><label>التاريخ المرضي</label><input type="text" id="fh" placeholder="None  أو  DM, HTN  أو جرثومة المعدة..."></div>
+    <div class="dv"></div>
+    <div class="sub">⚡ الأعراض</div>
+    <div class="pills">
+      <button class="pill" onclick="tog(this)">قياء</button><button class="pill" onclick="tog(this)">حمى</button>
+      <button class="pill" onclick="tog(this)">ألم بطني</button><button class="pill" onclick="tog(this)">إسهال</button>
+      <button class="pill" onclick="tog(this)">صداع</button><button class="pill" onclick="tog(this)">دوخة</button>
+      <button class="pill" onclick="tog(this)">ضيق تنفس</button><button class="pill" onclick="tog(this)">ألم صدر</button>
+      <button class="pill" onclick="tog(this)">ألم ظهر</button><button class="pill" onclick="tog(this)">هبوط</button>
+      <button class="pill" onclick="tog(this)">جرح</button><button class="pill" onclick="tog(this)">كدمات</button>
+      <button class="pill" onclick="tog(this)">إغماء</button><button class="pill" onclick="tog(this)">طلب حقنة IM</button>
+      <button class="pill" onclick="tog(this)">قياس ضغط</button><button class="pill" onclick="tog(this)">أخرى</button>
+    </div>
+    <div class="f"><label>تفاصيل إضافية</label><input type="text" id="fcd" placeholder="سبب أو تفاصيل..."></div>
+  </div>
+</div>
+
+<!-- V/S -->
+<div class="card">
+  <div class="ch gr">📊 العلامات الحيوية (V/S)</div>
+  <div class="cb">
+    <div class="vg">
+      <div class="vc"><div class="vi">🩸</div><label>BP</label><input type="text" id="vbp" placeholder="120/80"><div class="vu">mmHg</div></div>
+      <div class="vc"><div class="vi">🫁</div><label>SpO2</label><input type="number" id="vsp" placeholder="98"><div class="vu">%</div></div>
+      <div class="vc"><div class="vi">🧠</div><label>GCS</label><input type="text" id="vgc" placeholder="15/15"><div class="vu">GCS</div></div>
+      <div class="vc"><div class="vi">🩺</div><label>RBS</label><input type="text" id="vrb" placeholder="/// أو 120"><div class="vu">mg/dL</div></div>
+      <div class="vc"><div class="vi">💓</div><label>H.R</label><input type="number" id="vhr" placeholder="80"><div class="vu">bpm</div></div>
+      <div class="vc"><div class="vi">🌡️</div><label>Temp</label><input type="text" id="vtm" placeholder="37 أو ///"><div class="vu">°C</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- الإجراءات -->
+<div class="card">
+  <div class="ch pu">🛠️ الإجراءات والتدخل الطبي</div>
+  <div class="cb">
+    <div class="sub">✅ البروتوكولات</div>
+    <div class="pills" id="proto-pills">
+      <button class="pill on" onclick="tog(this)">ABCDE</button>
+      <button class="pill on" onclick="tog(this)">IPSGs</button>
+      <button class="pill on" onclick="tog(this)">ITLS</button>
+      <button class="pill" onclick="tog(this)">BLS</button>
+      <button class="pill" onclick="tog(this)">ALS</button>
+      <button class="pill" onclick="tog(this)">Airway Mgmt</button>
+      <button class="pill" onclick="tog(this)">O2 Therapy</button>
+      <button class="pill" onclick="tog(this)">IV / Cannula</button>
+      <button class="pill" onclick="tog(this)">Nebulizer</button>
+      <button class="pill" onclick="tog(this)">Dressing</button>
+      <button class="pill" onclick="tog(this)">إحالة مستشفى</button>
+      <button class="pill" onclick="tog(this)">Psych Support</button>
+    </div>
+    <div class="dv"></div>
+    <div class="sub" style="display:flex;justify-content:space-between;align-items:center">
+      <span>💊 الأدوية والعلاج</span>
+      <button type="button" onclick="openInventory()" style="background:#eef6fb;color:#1b6b8c;border:1px solid #cfe4ee;border-radius:7px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer">📦 المخزون</button>
+    </div></div>
+
+<!-- ⭐ الأكثر استخدامًا -->
+<div class="f" style="margin-bottom:10px">
+  <label>⭐ الأكثر استخدامًا (اضغط لإضافة سريعة)</label>
+  <div class="pills" id="topMedsQuick"></div>
+</div>
+<!-- ⭐ نهاية الإضافة -->
+    <div class="f">
+      <label>اختر من كتالوج الصيدلية</label>
+      <div style="display:flex;gap:6px">
+        <select id="medCatalogSelect" style="flex:1">
+        <optgroup label="حقن وأمبولات">
+          <option value="Avil 45.5 mg/2 ml">Avil 45.5 mg/2 ml — أمبولات</option>
+          <option value="Primperan 10 mg/2 ml">Primperan 10 mg/2 ml — أمبولات</option>
+          <option value="Dicynone 250 mg/2 ml">Dicynone 250 mg/2 ml — أمبولات</option>
+          <option value="Ketolac 30 mg/2 ml">Ketolac 30 mg/2 ml — أمبولات</option>
+          <option value="Spasmofree 5 mg/2 ml">Spasmofree 5 mg/2 ml — أمبولات</option>
+          <option value="Spasmofen 100mg/20mg">Spasmofen 100mg/20mg — أمبولات</option>
+          <option value="Visceralgine 5 mg/2 ml">Visceralgine 5 mg/2 ml — أمبولات</option>
+          <option value="Dexamethasone 8 mg/2 ml">Dexamethasone 8 mg/2 ml — أمبولات</option>
+          <option value="Kapron 500 mg/5 ml">Kapron 500 mg/5 ml — أمبولات</option>
+          <option value="Ceftriaxone 1000 mg (1g Vial)">Ceftriaxone 1000 mg (1g Vial) — فيال حقن</option>
+          <option value="Epifenac (Diclofenac Sodium)">Epifenac (Diclofenac Sodium) — أمبولات</option>
+        </optgroup>
+        <optgroup label="أقراص وكبسولات">
+          <option value="Capoten 25 mg">Capoten 25 mg — علبة / شريط أقراص</option>
+          <option value="Cetal 500 mg">Cetal 500 mg — علبة أقراص</option>
+          <option value="Antodine 20 mg">Antodine 20 mg — علبة أقراص</option>
+          <option value="Corasore-N">Corasore-N — علبة أقراص</option>
+          <option value="Omez 20 mg">Omez 20 mg — علبة كبسولات</option>
+          <option value="Aggrex 75 mg">Aggrex 75 mg — علبة أقراص</option>
+          <option value="Concor 5 mg">Concor 5 mg — علبة أقراص</option>
+          <option value="Epi-Dinitra 5 mg">Epi-Dinitra 5 mg — علبة أقراص تحت اللسان</option>
+          <option value="Ketolac Strip">Ketolac Strip — شريط أقراص</option>
+          <option value="Anergil / Allergy Strip">Anergil / Allergy Strip — شريط أقراص</option>
+          <option value="Spasmofree Strip">Spasmofree Strip — شريط أقراص</option>
+          <option value="Streptoquin Strip / Box">Streptoquin Strip / Box — علبة / شريط أقراص</option>
+          <option value="Epilat 10 mg (Nifedipine)">Epilat 10 mg (Nifedipine) — علبة كبسولات رخوة</option>
+          <option value="Midodrine 2.5 mg">Midodrine 2.5 mg — علبة أقراص</option>
+          <option value="Paramol 500 mg">Paramol 500 mg — شريط / علبة أقراص</option>
+          <option value="Antinal 200 mg">Antinal 200 mg — شريط أقراص</option>
+          <option value="Aspocid 75 mg (Acetylsalicylic acid)">Aspocid 75 mg (Acetylsalicylic acid) — شريط أقراص</option>
+          <option value="Flagyl 500 mg">Flagyl 500 mg — علبة أقراص</option>
+          <option value="Visceralgine 50 mg Tablets">Visceralgine 50 mg Tablets — علبة أقراص</option>
+          <option value="Just-Ridge 100 mg">Just-Ridge 100 mg — علبة أقراص</option>
+          <option value="Vomibrick">Vomibrick — علبة أقراص</option>
+        </optgroup>
+        <optgroup label="جلسات استنشاق ونيبولايزر">
+          <option value="Farcolin Nebulizer Solution">Farcolin Nebulizer Solution — زجاجة نقط نيبولايزر</option>
+          <option value="Atrovent 500 mcg/2 ml">Atrovent 500 mcg/2 ml — أمبولات نيبولايزر بلاستيك</option>
+          <option value="Asmatropim (Ipratropium Bromide)">Asmatropim (Ipratropium Bromide) — أمبولات نيبولايزر بلاستيك</option>
+        </optgroup>
+        <optgroup label="أدوية سائلة ونقط">
+          <option value="Picolax Oral Drops">Picolax Oral Drops — زجاجة نقط</option>
+          <option value="Visceralgine Syrup 120ml">Visceralgine Syrup 120ml — زجاجة شراب</option>
+          <option value="Diasmect Oral Suspension 60ml">Diasmect Oral Suspension 60ml — زجاجة معلق</option>
+        </optgroup>
+        <optgroup label="مطهرات ومحاليل خارجية">
+          <option value="Betadine Antiseptic 10% (60ml)">Betadine Antiseptic 10% (60ml) — زجاجة مطهر</option>
+        </optgroup>
+        <optgroup label="دهانات ومستحضرات موضعية">
+          <option value="MEBO Ointment 15g">MEBO Ointment 15g — أنبوبة مرهم</option>
+          <option value="Borraginol Ointment">Borraginol Ointment — أنبوبة مرهم</option>
+          <option value="Flyer & Vial Gel">Flyer & Vial Gel — أنبوبة جيل</option>
+          <option value="Melano Melo Ointment 30g">Melano Melo Ointment 30g — أنبوبة مرهم</option>
+          <option value="Hemoclar Cream 0.5%">Hemoclar Cream 0.5% — أنبوبة كريم</option>
+          <option value="Betaderm Cream">Betaderm Cream — أنبوبة كريم</option>
+          <option value="Pranos Cream">Pranos Cream — أنبوبة كريم</option>
+          <option value="Calamyl Lotion">Calamyl Lotion — زجاجة لوشن</option>
+          <option value="Garamycin Cream">Garamycin Cream — أنبوبة كريم</option>
+          <option value="Mupirax Ointment 10g">Mupirax Ointment 10g — أنبوبة مرهم</option>
+        </optgroup>
+        <optgroup label="مستلزمات وأجهزة طبية">
+          <option value="Nitrile Examination Gloves (Large)">Nitrile Examination Gloves (Large) — علبة (100 قفاز)</option>
+          <option value="Surgical Face Masks (UNICARE 50 Pcs)">Surgical Face Masks (UNICARE 50 Pcs) — علبة (50 ماسك)</option>
+          <option value="Absorbent Medical Cotton (250g)">Absorbent Medical Cotton (250g) — كيس قطن</option>
+          <option value="Sphygmomanometer (Blood Pressure Monitor)">Sphygmomanometer (Blood Pressure Monitor) — جهاز قياس</option>
+          <option value="Stethoscope">Stethoscope — جهاز فحص</option>
+          <option value="Pulse Oximeter">Pulse Oximeter — جهاز فحص</option>
+          <option value="Glass Clinical Thermometer">Glass Clinical Thermometer — ترمومتر</option>
+          <option value="Nebulizer Mask & Chamber">Nebulizer Mask & Chamber — طقم ماسك</option>
+          <option value="IV Giving Set (جهاز وريد)">IV Giving Set (جهاز وريد) — جهاز نقل محاليل</option>
+          <option value="Pan Tulle Four-M (غيار شاش فازلين)">Pan Tulle Four-M (غيار شاش فازلين) — علبة / مغلفات شاش</option>
+          <option value="Gauze Bandage (رباط شاش)">Gauze Bandage (رباط شاش) — بكرة شاش</option>
+          <option value="Surgical Pad (ضمادة جراحية معقمة)">Surgical Pad (ضمادة جراحية معقمة) — ضمادات معقمة</option>
+          <option value="IV Cannula 22G - Blue (كانيولا زرقاء)">IV Cannula 22G - Blue (كانيولا زرقاء) — قطعة / كانيولا</option>
+          <option value="IV Cannula 20G - Pink (كانيولا بينك/وردية)">IV Cannula 20G - Pink (كانيولا بينك/وردية) — قطعة / كانيولا</option>
+          <option value="IV Cannula 24G - Yellow (كانيولا صفراء)">IV Cannula 24G - Yellow (كانيولا صفراء) — قطعة / كانيولا</option>
+          <option value="Blood Glucose Test Strips (شرايط قياس السكر)">Blood Glucose Test Strips (شرايط قياس السكر) — علبة / شرائط اختباك</option>
+          <option value="Oxygen Flowmeter & Humidifier Jar">Oxygen Flowmeter & Humidifier Jar — جهاز قياس تدفق</option>
+        </optgroup>
+        <optgroup label="محاليل وريدية">
+          <option value="Dextrose 5% Solution (MUP 500ml)">Dextrose 5% Solution (MUP 500ml) — زجاجة / كيس 500 مل</option>
+          <option value="Sodium Chloride 0.9% Solution (GIPCCO 500ml)">Sodium Chloride 0.9% Solution (GIPCCO 500ml) — زجاجة / كيس 500 مل</option>
+          <option value="Ringer's Injection Solution (Otsuka 500ml)">Ringer's Injection Solution (Otsuka 500ml) — زجاجة / كيس 500 مل</option>
+          <option value="Glucose BP Solution (Otsuka 500ml)">Glucose BP Solution (Otsuka 500ml) — زجاجة / كيس 500 مل</option>
+        </optgroup>
+        </select>
+        <button type="button" onclick="addCatalogMed()" style="white-space:nowrap;background:#1b6b8c;color:#fff;border:none;border-radius:8px;padding:0 14px;font-size:12px;font-weight:700;cursor:pointer">➕ إضافة</button>
+      </div>
+    </div>
+    <div class="f" style="margin-top:8px">
+      <label>➕ دواء أو مستلزم آخر (مش موجود في الكتالوج)</label>
+      <div style="display:flex;gap:6px">
+        <input type="text" id="customMedInput" placeholder="اكتب اسم الدواء أو المستلزم..." style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomMed();}">
+        <button type="button" onclick="addCustomMed()" style="white-space:nowrap;background:#1b6b8c;color:#fff;border:none;border-radius:8px;padding:0 14px;font-size:12px;font-weight:700;cursor:pointer">➕ إضافة</button>
+      </div>
+    </div>
+    <div class="f" style="margin-top:8px">
+      <label>الأدوية والمستلزمات المختارة لهذه الحالة</label>
+      <div class="pills" id="selected-meds-pills"></div>
+    </div>
+    <div class="f"><label>دواء آخر / تفاصيل الإجراء</label>
+      <textarea id="fpr" placeholder="أي إجراءات إضافية..."></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- التعليمات -->
+<div class="card">
+  <div class="ch re">📢 Health Education</div>
+  <div class="cb">
+    <div class="pills" id="edu-pills">
+      <button class="pill" onclick="tog(this)">الراحة التامة</button>
+      <button class="pill" onclick="tog(this)">شرب المياه الكافية</button>
+      <button class="pill" onclick="tog(this)">التغذية السليمة</button>
+      <button class="pill" onclick="tog(this)">تعويض السوائل / ORS</button>
+      <button class="pill" onclick="tog(this)">السلامة الغذائية</button>
+      <button class="pill" onclick="tog(this)">أطعمة خفيفة ومسلوقة</button>
+      <button class="pill" onclick="tog(this)">كمادات باردة</button>
+      <button class="pill" onclick="tog(this)">البعد عن الشمس</button>
+      <button class="pill" onclick="tog(this)">ممارسة الرياضة</button>
+      <button class="pill" onclick="tog(this)">النوم الكافي</button>
+      <button class="pill" onclick="tog(this)">متابعة internist</button>
+      <button class="pill" onclick="tog(this)">متابعة dentist</button>
+      <button class="pill" onclick="tog(this)">متابعة urologist</button>
+      <button class="pill" onclick="tog(this)">متابعة nephrologist</button>
+      <button class="pill" onclick="tog(this)">متابعة dermatologist</button>
+      <button class="pill" onclick="tog(this)">متابعة الطبيب والأدوية</button>
+      <button class="pill" onclick="tog(this)">طوارئ عند تدهور الحالة</button>
+      <button class="pill" onclick="tog(this)">قواعد السلامة أثناء العمل</button>
+    </div>
+    <div class="f"><label>تعليمات إضافية</label>
+      <input type="text" id="fee" placeholder="أي تعليمات إضافية...">
+    </div>
+  </div>
+</div>
+
+<!-- النتيجة -->
+<div class="card">
+  <div class="ch te">📋 النتيجة والمسعف</div>
+  <div class="cb">
+    <div class="g3">
+      <div class="f"><label>نتيجة التدخل</label>
+        <select id="foc">
+          <option value="">—</option>
+          <option>تحسن وأُفرج عنه</option><option>تحول للمستشفى</option>
+          <option>تحسن جزئي - متابعة</option><option>رفض العلاج</option><option>حالة خطيرة - إسعاف</option>
+        </select>
+      </div>
+      <div class="f"><label>اسم المسعف</label><input type="text" id="fpa" placeholder="اسم مقدم الخدمة"></div>
+      <div class="f"><label>نوع الحدث</label>
+        <select id="fet">
+          <option>خدمات اسعافات طبية</option><option>حادث عمل</option>
+          <option>حالة طارئة</option><option>إسعاف ونقل</option>
+        </select>
+      </div>
+    </div>
+    <div class="f">
+      <label>🚩 علامات الخطر <span style="font-weight:400;color:#889">(اختار أي علامة موجودة — أي علامة = حالة حرجة)</span></label>
+      <div id="rfBox"></div>
+      <div class="rf-status" id="rfStatus" style="display:none"></div>
+    </div>
+    <div class="f">
+      <label>🚦 مستوى الأولوية <span class="rq">*</span></label>
+      <div class="priority-pills" id="priorityPills" style="display:flex;gap:8px;margin-top:6px">
+        <button type="button" class="priority-btn minor" data-p="minor" onclick="setPriority('minor')">🟢 بسيطة</button>
+        <button type="button" class="priority-btn moderate" data-p="moderate" onclick="setPriority('moderate')">🟡 متوسطة</button>
+        <button type="button" class="priority-btn critical" data-p="critical" onclick="setPriority('critical')">🔴 حرجة</button>
+      </div>
+      <input type="hidden" id="fcritical" value="">
+    </div>
+    <div class="f" id="fcreasonWrap" style="display:none">
+      <label>سبب تصنيف الحالة "حرجة" <span class="rq">*</span> <span style="font-weight:400;color:#889">(مطلوب لأنه مفيش علامة خطر مختارة)</span></label>
+      <textarea id="fcreason" placeholder="اكتب سبب اعتبار الحالة حرجة..."></textarea>
+    </div>
+    <div class="gap"></div>
+    <div class="f"><label>ملاحظات</label>
+      <textarea id="fno" placeholder="أي ملاحظات..."></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- أزرار -->
+<div class="btns">
+  <button class="btn btn-cl" onclick="clearAll()">🗑️ مسح</button>
+  <button class="btn btn-gg" onclick="saveAndShareWA()">📊💬 حفظ وإرسال واتساب</button>
+  <button class="btn btn-pdf" onclick="exportPDF()">📄 PDF</button>
+</div>
+
+<!-- Low Stock Banner -->
+<div id="lowStockBanner" style="display:none;background:#fdecea;border:1.5px solid #f3b8b1;color:#c0392b;border-radius:10px;padding:10px 14px;margin-bottom:13px;font-size:12.5px;font-weight:700;cursor:pointer" onclick="openInventory()"></div>
+
+<!-- Inventory Modal -->
+<div class="ov" id="inventoryOv">
+  <div class="modal">
+    <div class="mh" style="background:linear-gradient(135deg,#1b6b8c,#2f9bc4)">
+      <h3>📦 المخزون والصيدلية — <span id="invSiteLabel">تاج</span></h3>
+      <button onclick="closeInventory()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div class="mb">
+      <div id="invLoading" style="text-align:center;color:#667;padding:20px;font-size:13px">⏳ جاري تحميل المخزون...</div>
+      <div id="invToolbar" style="display:none">
+        <select id="invExportScope">
+          <option value="all">تصدير: كل الأصناف</option>
+          <option value="low">تصدير: النواقص فقط</option>
+        </select>
+        <button type="button" class="inv-exp-btn xl" onclick="exportStockExcel()">📊 Excel</button>
+        <button type="button" class="inv-exp-btn pdf" onclick="exportStockPDF()">📄 PDF</button>
+        <button type="button" class="inv-exp-btn add" onclick="invAddItem()">➕ صنف جديد</button>
+        <button type="button" class="inv-exp-btn log" onclick="openMovements()">📜 سجل الحركات</button>
+      </div>
+      <div id="invTable" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Emergency Modal -->
+<div class="ov" id="emergencyModal">
+  <div class="modal">
+    <div class="mh" id="emergencyGradientBox" style="background:linear-gradient(135deg,#0a3d6b,#7b1fa2)">
+      <h3>📞 أرقام المشرفين</h3>
+      <button onclick="closeEmergencyModal()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div class="mb" style="padding:0">
+      <div id="emergencyGradientCard" style="background:linear-gradient(135deg,#0a3d6b,#7b1fa2);padding:14px;color:#fff">
+        <div class="supervisor-row">
+          <div class="supervisor-info">
+            <span class="supervisor-name">👨‍💼 يوسف (مشرف الطوارئ)</span>
+            <span class="supervisor-phone">01287400150</span>
+          </div>
+          <div class="supervisor-actions">
+            <a href="tel:+201287400150" class="call-btn">📞 اتصال</a>
+            <button onclick="openWhatsApp('01287400150')" class="whatsapp-btn">💬 واتساب</button>
+            <button class="copy-btn" onclick="copyNumber('01287400150')">📋 نسخ</button>
+          </div>
+        </div>
+        <div class="supervisor-row">
+          <div class="supervisor-info">
+            <span class="supervisor-name">👨‍⚕️ د. يوسف</span>
+            <span class="supervisor-phone">01116812539</span>
+          </div>
+          <div class="supervisor-actions">
+            <a href="tel:+201116812539" class="call-btn">📞 اتصال</a>
+            <button onclick="openWhatsApp('01116812539')" class="whatsapp-btn">💬 واتساب</button>
+            <button class="copy-btn" onclick="copyNumber('01116812539')">📋 نسخ</button>
+          </div>
+        </div>
+        <div class="supervisor-row" style="margin-bottom:0">
+          <div class="supervisor-info">
+            <span class="supervisor-name">👨‍⚕️ د. جاسر</span>
+            <span class="supervisor-phone">01037946089</span>
+          </div>
+          <div class="supervisor-actions">
+            <a href="tel:+201037946089" class="call-btn">📞 اتصال</a>
+            <button onclick="openWhatsApp('01037946089')" class="whatsapp-btn">💬 واتساب</button>
+            <button class="copy-btn" onclick="copyNumber('01037946089')">📋 نسخ</button>
+          </div>
+        </div>
+        <div style="text-align:center;font-size:11px;opacity:.9;margin-top:6px">⚠️ يرجى استخدام هذا الزر فقط في الحالات الحرجة</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WA Modal -->
+<div class="ov" id="waOv">
+  <div class="modal">
+    <div class="mh">
+      <h3>💬 التقرير — جاهز للواتساب</h3>
+      <button class="mx" onclick="closeWA()">✕</button>
+    </div>
+    <div class="mb"><div class="wat" id="waT"></div></div>
+    <div class="mf">
+      <button class="bcp" onclick="copyWA()">📋 نسخ النص</button>
+      <button class="bcl" onclick="closeWA()">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- Case Search Modal -->
+<div class="ov" id="searchOv">
+  <div class="modal">
+    <div class="mh" style="background:linear-gradient(135deg,#1b6b8c,#2f9bc4)">
+      <h3>🔍 بحث عن حالة سابقة</h3>
+      <button class="mx" onclick="closeSearch()">✕</button>
+    </div>
+    <div class="mb">
+      <div class="f" style="margin-bottom:10px">
+        <input type="text" id="searchQuery" placeholder="اكتب اسم الحالة..." oninput="if(event.key!=='Enter')return;">
+      </div>
+      <button type="button" onclick="runSearch()" style="width:100%;background:#1b6b8c;color:#fff;border:none;border-radius:8px;padding:10px;font-weight:700;cursor:pointer">بحث</button>
+      <div id="searchResults" style="margin-top:14px"></div>
+    </div>
+    <div class="mf">
+      <button class="bcl" onclick="closeSearch()">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reference Card Modal -->
+<div class="ov" id="refOv">
+  <div class="modal">
+    <div class="mh" style="background:linear-gradient(135deg,#a80000,#e53935)">
+      <h3 id="refTitle">🔍 مرجع تشخيص سريع</h3>
+      <button class="mx" onclick="closeRef()">✕</button>
+    </div>
+    <div class="mb"><div class="wat" id="refBody" style="border-color:#e53935;background:#fdecea"></div></div>
+    <div class="mf">
+      <button class="bcl" onclick="closeRef()" style="flex:1">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="tst"></div>
+
+<script src="js/config.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/inventory.js"></script>
+<script src="js/stock-export.js"></script>
+<script src="js/inventory-admin.js"></script>
+<script src="js/movements.js"></script>
+<script src="js/movements-export.js"></script>
+<script src="js/meds.js"></script>
+<script src="js/search.js"></script>
+<script src="js/templates.js"></script>
+<script src="js/triage.js"></script>
+<script src="js/form.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/draft.js"></script>
+<script src="js/report.js"></script>
+<script src="js/reference.js"></script>
+<script src="js/actions.js"></script>
+<script src="js/logo.js"></script>
+<script src="js/pdf.js"></script>
+<script src="js/sheets.js"></script>
+<script src="js/offline.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
